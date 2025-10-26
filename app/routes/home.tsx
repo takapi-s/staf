@@ -1,0 +1,73 @@
+import type { Route } from "./+types/home";
+import { SettingsDialog } from "../components/SettingsDialog";
+import { CsvUploader } from "../components/CsvUploader";
+import { CsvPreview } from "../components/CsvPreview";
+import { PromptEditor } from "../components/PromptEditor";
+import { TemplateManager } from "../components/TemplateManager";
+import { ProcessControl } from "../components/ProcessControl";
+import { ResultViewer } from "../components/ResultViewer";
+import { ExportDialog } from "../components/ExportDialog";
+import { Button } from "../components/ui/button";
+import { Download } from "lucide-react";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "GeminiScope - CSV×Gemini Web Search Tool" },
+    { name: "description", content: "CSVファイルをGemini Web Searchで一括処理するツール" },
+  ];
+}
+
+export default function Home() {
+  return (
+    <div className="min-h-screen bg-background">
+      {/* ヘッダー */}
+      <header className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">GeminiScope</h1>
+              <p className="text-sm text-muted-foreground">
+                CSV×Gemini Web Search 一括処理ツール
+              </p>
+            </div>
+            <SettingsDialog />
+          </div>
+        </div>
+      </header>
+
+      {/* メインコンテンツ */}
+      <main className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* 左パネル (40%) */}
+          <div className="lg:col-span-2 space-y-6">
+            <CsvUploader />
+            <CsvPreview />
+            <TemplateManager />
+          </div>
+
+          {/* 右パネル (60%) */}
+          <div className="lg:col-span-3 space-y-6">
+            <PromptEditor />
+            <ProcessControl />
+            <ResultViewer />
+          </div>
+        </div>
+
+        {/* フッター */}
+        <footer className="mt-8 pt-6 border-t">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              <p>GeminiScope v0.1.0 - Powered by Tauri & React</p>
+            </div>
+            <ExportDialog>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                結果をエクスポート
+              </Button>
+            </ExportDialog>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
