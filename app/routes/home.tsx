@@ -7,6 +7,7 @@ import { OutputColumnEditor } from "../components/OutputColumnEditor";
 import { TemplateManager } from "../components/TemplateManager";
 import { ProcessControl } from "../components/ProcessControl";
 import { ResultViewer } from "../components/ResultViewer";
+import { UpdateChecker } from "../components/UpdateChecker";
 
 export const meta: MetaFunction = () => {
   return [
@@ -28,7 +29,10 @@ export default function Home() {
                 CSV×Gemini Web Search 一括処理ツール
               </p>
             </div>
-            <SettingsDialog />
+            <div className="flex items-center gap-2">
+              <UpdateChecker />
+              <SettingsDialog />
+            </div>
           </div>
         </div>
       </header>
