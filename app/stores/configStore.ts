@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AppConfig } from '../types';
+import type { AppConfig } from '../types';
 
 interface ConfigState {
   config: AppConfig;

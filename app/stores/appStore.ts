@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Row, ProcessedRow, ErrorRow, Template } from '../types';
+import type { Row, ProcessedRow, ErrorRow, Template, OutputColumn } from '../types';
 
 interface AppState {
   // CSV入力
@@ -10,6 +10,9 @@ interface AppState {
   promptTemplate: string;
   savedTemplates: Template[];
   
+  // 出力カラム設定
+  outputColumns: OutputColumn[];
+  
   // 実行状態
   isProcessing: boolean;
   progress: { current: number; total: number };
@@ -19,6 +22,10 @@ interface AppState {
   // アクション
   setCsvData: (data: Row[], headers: string[]) => void;
   setPromptTemplate: (template: string) => void;
+  setOutputColumns: (columns: OutputColumn[]) => void;
+  addOutputColumn: (column: OutputColumn) => void;
+  updateOutputColumn: (index: number, column: Partial<OutputColumn>) => void;
+  deleteOutputColumn: (index: number) => void;
   addTemplate: (template: Omit<Template, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTemplate: (id: string, updates: Partial<Template>) => void;
   deleteTemplate: (id: string) => void;
@@ -42,6 +49,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   csvHeaders: [],
   promptTemplate: '',
   savedTemplates: [],
+  outputColumns: [],
   isProcessing: false,
   progress: { current: 0, total: 0 },
   results: [],
@@ -55,6 +63,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   // プロンプト関連
   setPromptTemplate: (template) => {
     set({ promptTemplate: template });
+  },
+  
+  // 出力カラム関連
+  setOutputColumns: (columns) => {
+    set({ outputColumns: columns });
+  },
+  
+  addOutputColumn: (column) => {
+    set((state) => ({
+      outputColumns: [...state.outputColumns, column],
+    }));
+  },
+  
+  updateOutputColumn: (index, updates) => {
+    set((state) => ({
+      outputColumns: state.outputColumns.map((col, i) =>
+        i === index ? { ...col, ...updates } : col
+      ),
+    }));
+  },
+  
+  deleteOutputColumn: (index) => {
+    set((state) => ({
+      outputColumns: state.outputColumns.filter((_, i) => i !== index),
+    }));
   },
   
   addTemplate: (templateData) => {
@@ -139,6 +172,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       csvData: [],
       csvHeaders: [],
       promptTemplate: '',
+      outputColumns: [],
       results: [],
       errors: [],
       progress: { current: 0, total: 0 },

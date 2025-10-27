@@ -102,7 +102,7 @@ export function TemplateManager() {
               <Button size="sm">
                 <Save className="h-4 w-4 mr-2" />
                 保存
-                <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-muted rounded">Ctrl+S</kbd>
+                <kbd className="ml-2">Ctrl+S</kbd>
               </Button>
             </DialogTrigger>
             <DialogContent>

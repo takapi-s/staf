@@ -10,11 +10,8 @@
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+  @apply bg-gray-950;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -130,5 +127,9 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  kbd {
+    @apply px-1.5 py-0.5 text-xs font-mono bg-muted-foreground/10 text-muted-foreground border border-border rounded;
   }
 }

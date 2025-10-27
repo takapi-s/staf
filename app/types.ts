@@ -1,7 +1,7 @@
 // 共通型定義
 
 export interface Row {
-  [key: string]: string | number;
+  [key: string]: string | number | undefined;
 }
 
 export interface ProcessedRow extends Row {
@@ -32,6 +32,14 @@ export interface AppConfig {
   logLevel: 'info' | 'debug' | 'error';
 }
 
+// 出力カラム設定
+export interface OutputColumn {
+  name: string;
+  description?: string;
+  type?: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  nestedColumns?: OutputColumn[]; // ネストされたカラム（object/array用）
+}
+
 export interface ProcessResult {
   success: ProcessedRow[];
   errors: ErrorRow[];
@@ -47,6 +55,9 @@ export interface AppState {
   // プロンプト
   promptTemplate: string;
   savedTemplates: Template[];
+  
+  // 出力カラム設定
+  outputColumns: OutputColumn[];
   
   // 実行状態
   isProcessing: boolean;

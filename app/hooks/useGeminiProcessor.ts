@@ -10,6 +10,7 @@ export function useGeminiProcessor() {
   const { 
     csvData, 
     promptTemplate, 
+    outputColumns,
     isProcessing, 
     startProcessing: setProcessingState, 
     updateProgress, 
@@ -73,6 +74,7 @@ export function useGeminiProcessor() {
       const { success, errors } = await processorRef.current.processRows(
         csvData,
         promptTemplate,
+        outputColumns,
         (current, total) => {
           updateProgress(current);
         },
@@ -115,6 +117,7 @@ export function useGeminiProcessor() {
   }, [
     csvData, 
     promptTemplate, 
+    outputColumns,
     config, 
     setProcessingState, 
     updateProgress, 

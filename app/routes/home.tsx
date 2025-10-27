@@ -1,16 +1,14 @@
-import type { Route } from "./+types/home";
+import type { MetaFunction } from "react-router";
 import { SettingsDialog } from "../components/SettingsDialog";
 import { CsvUploader } from "../components/CsvUploader";
 import { CsvPreview } from "../components/CsvPreview";
 import { PromptEditor } from "../components/PromptEditor";
+import { OutputColumnEditor } from "../components/OutputColumnEditor";
 import { TemplateManager } from "../components/TemplateManager";
 import { ProcessControl } from "../components/ProcessControl";
 import { ResultViewer } from "../components/ResultViewer";
-import { ExportDialog } from "../components/ExportDialog";
-import { Button } from "../components/ui/button";
-import { Download } from "lucide-react";
 
-export function meta({}: Route.MetaArgs) {
+export const meta: MetaFunction = () => {
   return [
     { title: "GeminiScope - CSV×Gemini Web Search Tool" },
     { name: "description", content: "CSVファイルをGemini Web Searchで一括処理するツール" },
@@ -42,6 +40,7 @@ export default function Home() {
           <div className="lg:col-span-2 space-y-6">
             <CsvUploader />
             <CsvPreview />
+            <OutputColumnEditor />
             <TemplateManager />
           </div>
 
@@ -55,16 +54,8 @@ export default function Home() {
 
         {/* フッター */}
         <footer className="mt-8 pt-6 border-t">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              <p>GeminiScope v0.1.0 - Powered by Tauri & React</p>
-            </div>
-            <ExportDialog>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                結果をエクスポート
-              </Button>
-            </ExportDialog>
+          <div className="text-sm text-muted-foreground">
+            <p>GeminiScope v0.1.0 - Powered by Tauri & React</p>
           </div>
         </footer>
       </main>

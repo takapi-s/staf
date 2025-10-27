@@ -158,7 +158,7 @@ export function ProcessControl() {
             >
               <Play className="h-4 w-4 mr-2" />
               処理開始
-              <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-muted rounded">Ctrl+Enter</kbd>
+              <kbd className="ml-2">Ctrl+Enter</kbd>
             </Button>
           ) : (
             <Button 
@@ -168,7 +168,7 @@ export function ProcessControl() {
             >
               <Square className="h-4 w-4 mr-2" />
               中断
-              <kbd className="ml-2 px-1.5 py-0.5 text-xs bg-muted rounded">Esc</kbd>
+              <kbd className="ml-2">Esc</kbd>
             </Button>
           )}
         </div>
