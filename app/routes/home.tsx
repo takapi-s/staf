@@ -12,21 +12,21 @@ import { UpdateChecker } from "../components/UpdateChecker";
 export const meta: MetaFunction = () => {
   return [
     { title: "GeminiScope - CSV×Gemini Web Search Tool" },
-    { name: "description", content: "CSVファイルをGemini Web Searchで一括処理するツール" },
+    { name: "description", content: "A tool for batch processing CSV files with Gemini Web Search" },
   ];
 }
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
-      {/* ヘッダー */}
+      {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">GeminiScope</h1>
               <p className="text-sm text-muted-foreground">
-                CSV×Gemini Web Search 一括処理ツール
+                CSV×Gemini Web Search Batch Processing Tool
               </p>
             </div>
             <div className="flex items-center gap-2">

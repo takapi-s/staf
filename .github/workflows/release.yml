@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 0.1.0)'
+        required: true
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get version from tag
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            VERSION="${{ github.ref }}"
+            VERSION=${VERSION#refs/tags/v}
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update version files
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          # package.json
+          (Get-Content package.json) -replace '"version": ".*"', "`"version`: `"$version`"" | Set-Content package.json
+          # src-tauri/Cargo.toml
+          (Get-Content src-tauri/Cargo.toml) -replace 'version = ".*"', "version = `"$version`"" | Set-Content src-tauri/Cargo.toml
+          # src-tauri/tauri.conf.json
+          (Get-Content src-tauri/tauri.conf.json) -replace '"version": ".*"', "`"version`: `"$version`"" | Set-Content src-tauri/tauri.conf.json
+
+      - name: Build application
+        run: npm run tauri:build
+
+      - name: Sign installer
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ($env:TAURI_PRIVATE_KEY_PASSWORD) {
+            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" --password "$env:TAURI_PRIVATE_KEY_PASSWORD" .\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe
+          } else {
+            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" .\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe
+          }
+
+      - name: Read signature
+        id: signature
+        run: |
+          $sig = Get-Content .\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe.sig -Raw
+          # Remove newlines
+          $sig = $sig -replace "`r`n", ""
+          $sig = $sig -replace "`n", ""
+          echo "signature=$sig" >> $GITHUB_OUTPUT
+
+      - name: Generate updater.json
+        run: |
+          $json = @{
+            version = "${{ steps.version.outputs.version }}"
+            notes = "GeminiScope v${{ steps.version.outputs.version }}"
+            pub_date = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            platforms = @{
+              "windows-x86_64" = @{
+                signature = "${{ steps.signature.outputs.signature }}"
+                url = "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe"
+              }
+            }
+          } | ConvertTo-Json -Depth 10
+          
+          # Replace backslashes with forward slashes in the URL (PowerShell bug fix)
+          $json = $json -replace '\\', '/'
+          
+          Set-Content -Path updater.json -Value $json
+
+      - name: Commit updater.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add updater.json
+          git commit -m "Update updater.json for v${{ steps.version.outputs.version }}" || exit 0
+          git push origin main || exit 0
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: GeminiScope v${{ steps.version.outputs.version }}
+          body: |
+            ## GeminiScope v${{ steps.version.outputs.version }}
+            
+            ### インストール方法
+            - 下の「geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe」をダウンロード
+            - ダブルクリックしてインストール
+            
+            ### 自動更新
+            アプリ内の「更新を確認」ボタンから自動更新が可能です。
+          files: |
+            src-tauri/target/release/bundle/nsis/geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

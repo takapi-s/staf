@@ -1,105 +1,105 @@
 # GeminiScope
 
-CSVファイルを処理するための、Google Gemini AIを活用したデスクトップアプリケーション。
+A desktop application that leverages Google Gemini AI to process CSV files.
 
-## 特徴
+## Features
 
-- 🚀 **高速処理**: 大量のCSVファイルを効率的に処理
-- 🤖 **AI駆動**: Google Gemini AIによる高度なデータ変換と分析
-- 📊 **柔軟な設定**: カスタマイズ可能なプロンプトと出力カラム
-- 📝 **テンプレート管理**: よく使う設定をテンプレートとして保存
-- 💾 **簡単エクスポート**: 処理結果をCSV形式で出力
-- 🎨 **モダンUI**: TailwindCSSによる美しいインターフェース
+- 🚀 **High Performance**: Efficiently process large CSV files
+- 🤖 **AI-Powered**: Advanced data transformation and analysis using Google Gemini AI
+- 📊 **Flexible Configuration**: Customizable prompts and output columns
+- 📝 **Template Management**: Save frequently used settings as templates
+- 💾 **Easy Export**: Export processed results in CSV format
+- 🎨 **Modern UI**: Beautiful interface built with TailwindCSS
 
-## 必要な環境
+## Requirements
 
 - Windows 10/11
-- Google Gemini APIキー
+- Google Gemini API key
 
-## クイックスタート
+## Quick Start
 
-1. アプリを起動
-2. 設定アイコン（⚙️）をクリック
-3. Google Gemini APIキーを入力
-4. CSVファイルを選択
-5. プロンプトを編集（例: 「商品名を大文字に変換してください」）
-6. 処理開始ボタンをクリック
-7. 完了後、CSVエクスポート
+1. Launch the application
+2. Click the settings icon (⚙️)
+3. Enter your Google Gemini API key
+4. Select a CSV file
+5. Edit the prompt (e.g., "Convert product names to uppercase")
+6. Click the "Start Processing" button
+7. Export the results as CSV when complete
 
-## インストール
+## Installation
 
-### ビルド済みアプリ（推奨）
+### Pre-built Application (Recommended)
 
-最新のリリースからWindowsインストーラーをダウンロードしてインストールしてください。
+Download and install the Windows installer from the latest release.
 
-### 開発者向け：ソースからビルド
+### For Developers: Build from Source
 
-詳細は[`DEPLOYMENT.md`](./DEPLOYMENT.md)を参照してください。
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for detailed instructions.
 
 ```bash
-# 依存関係のインストール
+# Install dependencies
 npm install
 
-# 開発モードで起動
+# Run in development mode
 npm run tauri:dev
 
-# 本番ビルド
+# Build for production
 npm run tauri:build
 ```
 
-## 使い方
+## Usage
 
-1. **Google Gemini APIキーを設定**
-   - 設定ダイアログからAPIキーを入力
+1. **Set up Google Gemini API Key**
+   - Enter your API key in the settings dialog
 
-2. **CSVファイルを読み込む**
-   - 「ファイルを選択」ボタンからCSVファイルを選択
+2. **Load CSV File**
+   - Click "Select File" to choose a CSV file
 
-3. **処理設定を行う**
-   - プロンプトを編集（必要な変換内容を記述）
-   - 出力カラムを指定
-   - 並列処理数を調整（デフォルト: 1）
+3. **Configure Processing**
+   - Edit the prompt (describe the required transformation)
+   - Specify output columns
+   - Adjust parallel processing count (default: 1)
 
-4. **処理を実行**
-   - 「処理開始」ボタンをクリック
-   - 進捗をリアルタイムで確認
+4. **Execute Processing**
+   - Click "Start Processing" button
+   - Monitor progress in real-time
 
-5. **結果をエクスポート**
-   - 処理完了後、「CSVをエクスポート」から結果を保存
+5. **Export Results**
+   - After processing is complete, save results via "Export CSV"
 
-## プロジェクト構成
+## Project Structure
 
 ```
 geminiscope/
-├── app/                      # フロントエンド（React）
-│   ├── components/          # UIコンポーネント
-│   ├── hooks/               # カスタムフック
-│   ├── routes/              # ルーティング
-│   ├── stores/              # 状態管理（Zustand）
-│   └── utils/               # ユーティリティ
-├── src-tauri/               # バックエンド（Rust/Tauri）
-└── public/                  # 静的ファイル
+├── app/                      # Frontend (React)
+│   ├── components/          # UI Components
+│   ├── hooks/               # Custom Hooks
+│   ├── routes/              # Routing
+│   ├── stores/              # State Management (Zustand)
+│   └── utils/               # Utilities
+├── src-tauri/               # Backend (Rust/Tauri)
+└── public/                  # Static Files
 ```
 
-## 技術スタック
+## Tech Stack
 
-- **フロントエンド**: React 19, React Router 7, TailwindCSS 4
-- **バックエンド**: Tauri 2, Rust
-- **状態管理**: Zustand
+- **Frontend**: React 19, React Router 7, TailwindCSS 4
+- **Backend**: Tauri 2, Rust
+- **State Management**: Zustand
 - **AI API**: Google Gemini API
-- **CSV処理**: PapaParse
+- **CSV Processing**: PapaParse
 
-## ライセンス
+## License
 
 MIT License
 
-## 貢献
+## Contributing
 
-プルリクエストやイシューの報告を歓迎します！
+Pull requests and issue reports are welcome!
 
-## サポート
+## Support
 
-問題が発生した場合は、GitHubのIssuesセクションで報告してください。
+If you encounter any issues, please report them in the GitHub Issues section.
 
 ---
 

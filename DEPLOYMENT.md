@@ -1,190 +1,190 @@
-# GeminiScope 公開ガイド
+# GeminiScope Deployment Guide
 
-このドキュメントでは、GeminiScopeアプリをWindows向けにビルド・公開する方法を説明します。
+This document explains how to build and deploy the GeminiScope application for Windows.
 
-## 前提条件
+## Prerequisites
 
-ビルドに必要なツールがインストールされていることを確認してください：
+Ensure the following tools are installed for building:
 
-- **Node.js** (v18以上推奨)
-- **Rust** (最新安定版)
-- **Windows SDK** (Windowsビルド用)
-- **Microsoft Visual Studio C++ Build Tools** (Windows用)
+- **Node.js** (v18 or higher recommended)
+- **Rust** (latest stable version)
+- **Windows SDK** (for Windows builds)
+- **Microsoft Visual Studio C++ Build Tools** (for Windows)
 
-### 必要な環境のインストール
+### Installing Required Environment
 
-1. **Node.js**: https://nodejs.org/ からダウンロード
-2. **Rust**: https://www.rust-lang.org/tools/install からインストール
+1. **Node.js**: Download from https://nodejs.org/
+2. **Rust**: Install from https://www.rust-lang.org/tools/install
    ```bash
    rustc --version
    cargo --version
    ```
 3. **Windows Build Tools**:
-   - Visual Studio Installerから「C++ ビルド ツール」をインストール
-   - または `npm install -g windows-build-tools`
+   - Install "C++ build tools" from Visual Studio Installer
+   - Or run `npm install -g windows-build-tools`
 
-## ビルドの準備
+## Build Preparation
 
-### 1. 依存関係のインストール
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. 開発モードで動作確認
+### 2. Test in Development Mode
 
 ```bash
 npm run tauri:dev
 ```
 
-アプリが正常に起動することを確認してください。
+Verify that the application launches correctly.
 
-## 本番ビルド
+## Production Build
 
-### Windowsインストーラーの作成
+### Creating Windows Installer
 
 ```bash
 npm run tauri:build
 ```
 
-ビルドが完了すると、以下の場所に成果物が生成されます：
+After the build completes, the following artifacts will be generated:
 
 ```
 src-tauri/target/release/
-├── geminiscope_0.1.0_x64-setup.exe  # Windows インストーラー
-├── geminiscope.exe                   # 実行ファイル
-└── bundle/                           # 各種パッケージ形式
+├── geminiscope_0.1.0_x64-setup.exe  # Windows Installer
+├── geminiscope.exe                   # Executable
+└── bundle/                           # Various package formats
 ```
 
-### ビルド出力の説明
+### Build Output Explanation
 
-- **`geminiscope_0.1.0_x64-setup.exe`**: 最も一般的な配布形式。ユーザーがダブルクリックでインストール可能
-- **`geminiscope.exe`**: ポータブル版（インストール不要）
-- **MSI/AppX**: `bundle`フォルダ内に生成される他のパッケージ形式
+- **`geminiscope_0.1.0_x64-setup.exe`**: Most common distribution format. Users can install by double-clicking
+- **`geminiscope.exe`**: Portable version (no installation required)
+- **MSI/AppX**: Other package formats generated in the `bundle` folder
 
-## 配布方法
+## Distribution Methods
 
-### 1. 直接配布
+### 1. Direct Distribution
 
-- インストーラー（`.exe`）をユーザーに直接配布
-- クラウドストレージ（Google Drive、OneDrive等）から共有
-- 自社のホームページからダウンロード提供
+- Distribute the installer (`.exe`) directly to users
+- Share via cloud storage (Google Drive, OneDrive, etc.)
+- Provide download from your company's homepage
 
 ### 2. GitHub Releases
 
-1. GitHubでリポジトリを作成
-2. Releasesページにアクセス
-3. 「Draft a new release」をクリック
-4. タグ、タイトル、説明を入力
-5. ビルドした`geminiscope_0.1.0_x64-setup.exe`をアップロード
-6. 「Publish release」で公開
+1. Create a repository on GitHub
+2. Access the Releases page
+3. Click "Draft a new release"
+4. Enter tag, title, and description
+5. Upload the built `geminiscope_0.1.0_x64-setup.exe`
+6. Publish with "Publish release"
 
-### 3. Microsoft Store（Windows版）
+### 3. Microsoft Store (Windows)
 
-配布前に必要な手順：
+Required steps before distribution:
 
-1. **Microsoft Partner Center**に登録（$19の登録料）
-2. **アプリID**を取得し、`tauri.conf.json`に設定
-3. **証明書**を設定
-4. Store用に再ビルド
+1. Register with **Microsoft Partner Center** ($19 registration fee)
+2. Obtain **App ID** and configure in `tauri.conf.json`
+3. Set up **certificates**
+4. Rebuild for Store
 
-詳細: https://tauri.app/v1/guides/distribution/microsoft-store
+Details: https://tauri.app/v1/guides/distribution/microsoft-store
 
-### 4. 自動更新の設定
+### 4. Auto-Update Configuration
 
-Tauriの自動更新機能を使うには：
+To use Tauri's auto-update feature:
 
-1. 更新サーバーを用意（GitHub Releases、S3等）
-2. `tauri.conf.json`に`updater`設定を追加
-3. 更新チェック機能を実装
+1. Prepare an update server (GitHub Releases, S3, etc.)
+2. Add `updater` configuration to `tauri.conf.json`
+3. Implement update check functionality
 
-**詳細な手順**: [`UPDATES.md`](./UPDATES.md)を参照してください。
+**Detailed steps**: See [`UPDATES.md`](./UPDATES.md).
 
-主な手順：
-- 鍵ペアを生成して署名用に設定
-- `updater.json`を作成してGitHubに配置
-- ヘッダーの「更新を確認」ボタンから更新チェック
+Main steps:
+- Generate key pair and configure for signing
+- Create `updater.json` and place on GitHub
+- Check for updates via "Check for Updates" button in header
 
-詳細: https://tauri.app/v1/guides/distribution/updater
+Details: https://tauri.app/v1/guides/distribution/updater
 
-## ビルド最適化
+## Build Optimization
 
-### サイズ削減
+### Size Reduction
 
-1. 不要なファイルを削除
-2. UPX等で圧縮
-3. `--release`フラグで最適化
+1. Remove unnecessary files
+2. Compress with UPX, etc.
+3. Optimize with `--release` flag
 
 ```bash
 npm run tauri:build -- -- --release
 ```
 
-### パフォーマンス向上
+### Performance Improvement
 
-- フロントエンドのバンドルサイズを削減
-- 不要な依存関係を削除
-- コード分割を実施
+- Reduce frontend bundle size
+- Remove unnecessary dependencies
+- Implement code splitting
 
-## トラブルシューティング
+## Troubleshooting
 
-### ビルドエラー
+### Build Errors
 
-**エラー: `link.exe not found`**
+**Error: `link.exe not found`**
 ```bash
-# Visual Studio Build Toolsをインストール
-# または環境変数を設定
+# Install Visual Studio Build Tools
+# Or set environment variable
 set VCVARSALL=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat
 ```
 
-**エラー: `cargo not found`**
+**Error: `cargo not found`**
 ```bash
-# Rustを再インストール
-# または PATH に Rust を追加
+# Reinstall Rust
+# Or add Rust to PATH
 ```
 
-**エラー: `node_modules が見つからない`**
+**Error: `node_modules not found`**
 ```bash
-# 依存関係を再インストール
+# Reinstall dependencies
 rm -rf node_modules
 npm install
 ```
 
-### 実行時のエラー
+### Runtime Errors
 
-- ウイルス対策ソフトが誤検知する場合がある
-- 証明書で署名すると検知率が下がる
+- Antivirus software may give false positives
+- Code signing reduces detection rate
 
-## 証明書による署名（推奨）
+## Code Signing (Recommended)
 
-1. **コードサイニング証明書を取得**
-   - 商用証明機関（DigiCert等）
-2. **証明書で署名**
+1. **Obtain Code Signing Certificate**
+   - Commercial certificate authority (DigiCert, etc.)
+2. **Sign with Certificate**
    ```bash
    signtool sign /f your-cert.pfx /p password /t http://timestamp.digicert.com geminiscope.exe
    ```
 
-## チェックリスト
+## Checklist
 
-ビルド前に確認：
+Before building, verify:
 
-- [ ] `tauri.conf.json`のバージョン番号を更新
-- [ ] アプリアイコンが適切に設定されている
-- [ ] 著作権情報が正しく記載されている
-- [ ] ライセンスファイルが含まれている
-- [ ] README.mdが最新の状態
-- [ ] 環境変数の設定が必要な場合、説明文書を用意
+- [ ] Update version number in `tauri.conf.json`
+- [ ] App icon is properly configured
+- [ ] Copyright information is correctly stated
+- [ ] License file is included
+- [ ] README.md is up to date
+- [ ] If environment variables are required, prepare documentation
 
-## 次のステップ
+## Next Steps
 
-1. **テスト**: ビルドしたアプリを複数のWindows環境でテスト
-2. **フィードバック収集**: ベータテスターから意見を収集
-3. **機能追加**: フィードバックに基づいて機能を改善
-4. **正式リリース**: 準備が整ったら正式に公開
+1. **Testing**: Test the built app on multiple Windows environments
+2. **Feedback Collection**: Gather feedback from beta testers
+3. **Feature Addition**: Improve features based on feedback
+4. **Official Release**: Publish officially when ready
 
-## 参考リンク
+## Reference Links
 
-- [Tauri公式ドキュメント](https://tauri.app/)
-- [React Routerドキュメント](https://reactrouter.com/)
-- [Windows アプリの配布](https://tauri.app/v1/guides/distribution/windows)
-- [コード署名の説明](https://docs.microsoft.com/ja-jp/windows/win32/win_cert/about-certificates)
+- [Tauri Official Documentation](https://tauri.app/)
+- [React Router Documentation](https://reactrouter.com/)
+- [Windows App Distribution](https://tauri.app/v1/guides/distribution/windows)
+- [Code Signing Explanation](https://docs.microsoft.com/en-us/windows/win32/win_cert/about-certificates)
 

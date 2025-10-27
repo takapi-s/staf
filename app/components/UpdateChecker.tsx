@@ -23,13 +23,13 @@ export function UpdateChecker() {
         setUpdateInstance(update);
         setUpdateVersion(update.version);
         setShowDialog(true);
-        toast.info(`新しいバージョン ${update.version} が利用可能です`);
+        toast.info(`New version ${update.version} is available`);
       } else {
-        toast.success('アプリは最新の状態です');
+        toast.success('App is up to date');
       }
     } catch (error) {
       console.error('Update check error:', error);
-      toast.error('更新の確認に失敗しました');
+      toast.error('Failed to check for updates');
     } finally {
       setIsChecking(false);
     }
@@ -42,7 +42,7 @@ export function UpdateChecker() {
       setIsInstalling(true);
       setProgress(20);
 
-      // ダウンロードとインストール
+      // Download and install
       await updateInstance.downloadAndInstall((event: any) => {
         console.log('Update event:', event);
         
@@ -61,12 +61,12 @@ export function UpdateChecker() {
       });
 
       setProgress(100);
-      toast.success('更新が完了しました。アプリを再起動します...');
+      toast.success('Update completed. Restarting app...');
       
-      // アプリは自動的に再起動されます
+      // App will restart automatically
     } catch (error) {
       console.error('Install error:', error);
-      toast.error('更新のインストールに失敗しました');
+      toast.error('Failed to install update');
       setIsInstalling(false);
       setProgress(0);
     }
@@ -83,12 +83,12 @@ export function UpdateChecker() {
         {isChecking ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            確認中...
+            Checking...
           </>
         ) : (
           <>
             <Download className="mr-2 h-4 w-4" />
-            更新を確認
+            Check for Updates
           </>
         )}
       </Button>
@@ -96,11 +96,11 @@ export function UpdateChecker() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>更新が利用可能です</DialogTitle>
+            <DialogTitle>Update Available</DialogTitle>
             <DialogDescription>
-              新しいバージョン {updateVersion} がリリースされました。
+              New version {updateVersion} has been released.
               <br />
-              今すぐインストールしますか？
+              Would you like to install it now?
             </DialogDescription>
           </DialogHeader>
 
@@ -108,7 +108,7 @@ export function UpdateChecker() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                {progress}% インストール中...
+                {progress}% Installing...
               </p>
             </div>
           )}
@@ -117,18 +117,18 @@ export function UpdateChecker() {
             {!isInstalling && (
               <>
                 <Button variant="outline" onClick={() => setShowDialog(false)}>
-                  後で
+                  Later
                 </Button>
                 <Button onClick={installUpdateNow}>
                   <Download className="mr-2 h-4 w-4" />
-                  今すぐ更新
+                  Update Now
                 </Button>
               </>
             )}
             {isInstalling && progress === 100 && (
               <Button disabled>
                 <CheckCircle className="mr-2 h-4 w-4" />
-                完了（再起動します）
+                Complete (Restarting)
               </Button>
             )}
           </DialogFooter>
