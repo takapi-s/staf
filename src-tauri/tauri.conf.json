@@ -30,7 +30,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/updater.json"
+        "https://raw.githubusercontent.com/takapi-s/geminiscope/main/updater.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5VmZaNGJyL0h2dUg0ZmxNQW16L1hVeCtZWG5HSFNNZUNpQy96WEx3WkU3VUFBQkFBQUFBQUFBQUFBQUlBQUFBQXV1d2V5YkJWSkMvSTlZNGNrYjcvOFljRC81TVhreVVOWDZDTExFblNQYjdlZG5PLzdRL3hVM0xoSVpXSGpuSWtiMTFpVkc0bzdsSGlpYlpaUDdBaFZQS2U2OFZSbnJOQU5ZTllkVTQxUStwY09ZcE5OMitDTEFWRjM3WW9uRk8zQk9zQ2I1MzF6WTg9Cg=="

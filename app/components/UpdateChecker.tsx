@@ -1,52 +1,18 @@
-import { useState, useEffect } from 'react';
-import { check, installUpdate, onUpdaterEvent } from '@tauri-apps/plugin-updater';
+import { useState } from 'react';
+import { check } from '@tauri-apps/plugin-updater';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Progress } from './ui/progress';
-import { Download, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Download, CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function UpdateChecker() {
   const [isChecking, setIsChecking] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [progress, setProgress] = useState(0);
   const [updateVersion, setUpdateVersion] = useState('');
   const [showDialog, setShowDialog] = useState(false);
-
-  useEffect(() => {
-    const unlisten = onUpdaterEvent(({ error, status }) => {
-      console.log('Updater event:', { error, status });
-      
-      if (error) {
-        console.error('Updater error:', error);
-        toast.error(`更新エラー: ${error}`);
-        setIsInstalling(false);
-        return;
-      }
-
-      if (status) {
-        console.log('Update status:', status);
-        
-        if (status.status === 'DOWNLOADING') {
-          const downloaded = status.chunkLength || 0;
-          const total = status.contentLength || 0;
-          if (total > 0) {
-            const percent = Math.round((downloaded / total) * 100);
-            setProgress(percent);
-          }
-        } else if (status.status === 'DONE') {
-          setProgress(100);
-          setIsInstalling(false);
-          toast.success('更新のダウンロードが完了しました');
-        }
-      }
-    });
-
-    return () => {
-      unlisten.then(fn => fn());
-    };
-  }, []);
+  const [updateInstance, setUpdateInstance] = useState<any>(null);
 
   const checkForUpdates = async () => {
     try {
@@ -54,7 +20,7 @@ export function UpdateChecker() {
       const update = await check();
       
       if (update) {
-        setUpdateAvailable(true);
+        setUpdateInstance(update);
         setUpdateVersion(update.version);
         setShowDialog(true);
         toast.info(`新しいバージョン ${update.version} が利用可能です`);
@@ -70,15 +36,39 @@ export function UpdateChecker() {
   };
 
   const installUpdateNow = async () => {
+    if (!updateInstance) return;
+
     try {
       setIsInstalling(true);
-      setProgress(0);
-      await installUpdate();
-      // インストール完了後、アプリが再起動される
+      setProgress(20);
+
+      // ダウンロードとインストール
+      await updateInstance.downloadAndInstall((event: any) => {
+        console.log('Update event:', event);
+        
+        if (event?.status) {
+          if (event.status === 'DOWNLOADING') {
+            const downloaded = event.chunkLength || 0;
+            const total = event.contentLength || 0;
+            if (total > 0) {
+              const percent = Math.round((downloaded / total) * 100);
+              setProgress(20 + Math.round(percent * 0.8)); // 20-100%
+            }
+          } else if (event.status === 'INSTALLING') {
+            setProgress(95);
+          }
+        }
+      });
+
+      setProgress(100);
+      toast.success('更新が完了しました。アプリを再起動します...');
+      
+      // アプリは自動的に再起動されます
     } catch (error) {
       console.error('Install error:', error);
       toast.error('更新のインストールに失敗しました');
       setIsInstalling(false);
+      setProgress(0);
     }
   };
 
@@ -109,6 +99,8 @@ export function UpdateChecker() {
             <DialogTitle>更新が利用可能です</DialogTitle>
             <DialogDescription>
               新しいバージョン {updateVersion} がリリースされました。
+              <br />
+              今すぐインストールしますか？
             </DialogDescription>
           </DialogHeader>
 
@@ -116,7 +108,7 @@ export function UpdateChecker() {
             <div className="space-y-2">
               <Progress value={progress} />
               <p className="text-sm text-muted-foreground text-center">
-                {progress}% ダウンロード中...
+                {progress}% インストール中...
               </p>
             </div>
           )}
