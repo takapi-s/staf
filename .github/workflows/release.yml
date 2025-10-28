@@ -35,13 +35,13 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            VERSION="${{ github.ref }}"
-            VERSION=${VERSION#refs/tags/v}
-          else
-            VERSION="${{ github.event.inputs.version }}"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if ("${{ github.event_name }}" -eq "push") {
+            $VERSION = "${{ github.ref }}"
+            $VERSION = $VERSION -replace "refs/tags/v", ""
+          } else {
+            $VERSION = "${{ github.event.inputs.version }}"
+          }
+          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
 
       - name: Update version files
         run: |
