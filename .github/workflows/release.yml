@@ -50,8 +50,10 @@ jobs:
           (Get-Content package.json) -replace '"version": ".*"', "`"version`: `"$version`"" | Set-Content package.json
           # src-tauri/Cargo.toml
           (Get-Content src-tauri/Cargo.toml) -replace 'version = ".*"', "version = `"$version`"" | Set-Content src-tauri/Cargo.toml
-          # src-tauri/tauri.conf.json
-          (Get-Content src-tauri/tauri.conf.json) -replace '"version": ".*"', "`"version`: `"$version`"" | Set-Content src-tauri/tauri.conf.json
+          # src-tauri/tauri.conf.json - より安全な置換
+          $tauriConfig = Get-Content src-tauri/tauri.conf.json -Raw
+          $tauriConfig = $tauriConfig -replace '"version":\s*"[^"]*"', "`"version`: `"$version`""
+          Set-Content src-tauri/tauri.conf.json -Value $tauriConfig
 
       - name: Build application
         run: npm run tauri:build
@@ -61,39 +63,67 @@ jobs:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
         run: |
+          if (-not $env:TAURI_PRIVATE_KEY) {
+            Write-Error "TAURI_PRIVATE_KEY is required but not set"
+            exit 1
+          }
+          
+          $installerPath = ".\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe"
+          if (-not (Test-Path $installerPath)) {
+            Write-Error "Installer not found: $installerPath"
+            exit 1
+          }
+          
           if ($env:TAURI_PRIVATE_KEY_PASSWORD) {
-            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" --password "$env:TAURI_PRIVATE_KEY_PASSWORD" .\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe
+            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" --password "$env:TAURI_PRIVATE_KEY_PASSWORD" $installerPath
           } else {
-            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" .\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe
+            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" $installerPath
+          }
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Signing failed with exit code $LASTEXITCODE"
+            exit 1
           }
 
       - name: Read signature
         id: signature
         run: |
-          $sig = Get-Content .\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe.sig -Raw
+          $sigFile = ".\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
+          if (-not (Test-Path $sigFile)) {
+            Write-Error "Signature file not found: $sigFile"
+            exit 1
+          }
+          
+          $sig = Get-Content $sigFile -Raw
           # Remove newlines
           $sig = $sig -replace "`r`n", ""
           $sig = $sig -replace "`n", ""
-          echo "signature=$sig" >> $GITHUB_OUTPUT
+          echo "signature=$sig" >> $env:GITHUB_OUTPUT
 
       - name: Generate updater.json
         run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $signature = "${{ steps.signature.outputs.signature }}"
+          $repository = "${{ github.repository }}"
+          
+          if (-not $signature) {
+            Write-Error "Signature is empty, cannot generate updater.json"
+            exit 1
+          }
+          
           $json = @{
-            version = "${{ steps.version.outputs.version }}"
-            notes = "GeminiScope v${{ steps.version.outputs.version }}"
+            version = $version
+            notes = "GeminiScope v$version"
             pub_date = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
             platforms = @{
               "windows-x86_64" = @{
-                signature = "${{ steps.signature.outputs.signature }}"
-                url = "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe"
+                signature = $signature
+                url = "https://github.com/$repository/releases/download/v$version/geminiscope_$version`_x64-setup.exe"
               }
             }
           } | ConvertTo-Json -Depth 10
           
-          # Replace backslashes with forward slashes in the URL (PowerShell bug fix)
-          $json = $json -replace '\\', '/'
-          
-          Set-Content -Path updater.json -Value $json
+          Set-Content -Path updater.json -Value $json -Encoding UTF8
 
       - name: Commit updater.json
         run: |
