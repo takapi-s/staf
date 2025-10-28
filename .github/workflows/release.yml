@@ -144,11 +144,24 @@ jobs:
       - name: Commit updater.json
         shell: pwsh
         run: |
+          # detached HEAD で走る可能性があるため main を明示的に取得・チェックアウト
+          git fetch origin main --depth=1
+          git checkout -B main origin/main
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add updater.json
-          git commit -m "Update updater.json for v${{ steps.version.outputs.version }}" || exit 0
-          git push origin main || exit 0
+          git commit -m "Update updater.json for v${{ steps.version.outputs.version }}"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "No changes to commit."
+          } else {
+            git push origin main
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Failed to push to main"
+              exit 1
+            }
+          }
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
