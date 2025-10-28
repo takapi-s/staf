@@ -1,5 +1,8 @@
 # GeminiScope
 
+[![CI](https://github.com/takapi-s/geminiscope/actions/workflows/ci.yml/badge.svg)](https://github.com/takapi-s/geminiscope/actions/workflows/ci.yml)
+[![Release](https://github.com/takapi-s/geminiscope/actions/workflows/release.yml/badge.svg)](https://github.com/takapi-s/geminiscope/actions/workflows/release.yml)
+
 A desktop application that leverages Google Gemini AI to process CSV files.
 
 ## Features

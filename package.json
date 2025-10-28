@@ -9,7 +9,9 @@
     "typecheck": "react-router typegen && tsc",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "test:build": "npm run typecheck && npm run build && npm run tauri:build",
+    "ci:test": "npm ci && npm run test:build"
   },
   "dependencies": {
     "@google/genai": "^1.27.0",

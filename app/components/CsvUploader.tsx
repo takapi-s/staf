@@ -41,7 +41,7 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
           setCsvData(data, headers);
           onFileLoaded?.();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('CSV読み込みエラー:', error);
           alert('CSVファイルの読み込み中にエラーが発生しました');
         }
