@@ -10,6 +10,9 @@ on:
         description: 'Version (e.g., 0.1.0)'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   build-and-release:
     runs-on: windows-latest
@@ -25,51 +28,53 @@ jobs:
           cache: 'npm'
 
       - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install dependencies
         run: npm ci
 
       - name: Get version from tag
         id: version
+        shell: pwsh
         run: |
           if ("${{ github.event_name }}" -eq "push") {
-            $VERSION = "${{ github.ref }}"
-            $VERSION = $VERSION -replace "refs/tags/v", ""
+            $VERSION = "${{ github.ref }}" -replace "refs/tags/v", ""
           } else {
             $VERSION = "${{ github.event.inputs.version }}"
           }
-          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+          "version=$VERSION" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Update version files
+        shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
           
-          # package.json - より安全な置換
+          # package.json - JSONとして安全に更新
           $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
           $packageJson.version = $version
-          $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json
+          $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json -Encoding UTF8
           
-          # src-tauri/Cargo.toml - より安全な置換
+          # src-tauri/Cargo.toml - 正規表現で置換
           $cargoToml = Get-Content src-tauri/Cargo.toml -Raw
-          $cargoToml = $cargoToml -replace 'version = ".*"', "version = `"$version`""
-          Set-Content src-tauri/Cargo.toml -Value $cargoToml
+          $cargoToml = $cargoToml -replace 'version = "[^"]*"', "version = `"$version`""
+          Set-Content src-tauri/Cargo.toml -Value $cargoToml -Encoding UTF8
           
           # src-tauri/tauri.conf.json - JSONとして安全に処理
           $tauriConfig = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
           $tauriConfig.version = $version
-          $tauriConfig | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
+          $tauriConfig | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json -Encoding UTF8
 
       - name: Build application
         run: npm run tauri:build
 
       - name: Sign installer
+        shell: pwsh
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
         run: |
+          $ErrorActionPreference = "Stop"
+          
           if (-not $env:TAURI_PRIVATE_KEY) {
             Write-Error "TAURI_PRIVATE_KEY is required but not set"
             exit 1
@@ -80,20 +85,23 @@ jobs:
             Write-Error "Installer not found: $installerPath"
             exit 1
           }
-          
+
+          Write-Host "Signing installer: $installerPath"
           if ($env:TAURI_PRIVATE_KEY_PASSWORD) {
             npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" --password "$env:TAURI_PRIVATE_KEY_PASSWORD" $installerPath
           } else {
             npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" $installerPath
           }
-          
+
           if ($LASTEXITCODE -ne 0) {
             Write-Error "Signing failed with exit code $LASTEXITCODE"
             exit 1
           }
+          Write-Host "Signing completed successfully"
 
       - name: Read signature
         id: signature
+        shell: pwsh
         run: |
           $sigFile = ".\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
           if (-not (Test-Path $sigFile)) {
@@ -102,12 +110,11 @@ jobs:
           }
           
           $sig = Get-Content $sigFile -Raw
-          # Remove newlines
-          $sig = $sig -replace "`r`n", ""
-          $sig = $sig -replace "`n", ""
-          echo "signature=$sig" >> $env:GITHUB_OUTPUT
+          $sig = $sig -replace "`r`n", "" -replace "`n", ""
+          "signature=$sig" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Generate updater.json
+        shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
           $signature = "${{ steps.signature.outputs.signature }}"
@@ -118,10 +125,12 @@ jobs:
             exit 1
           }
           
+          $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          
           $json = @{
             version = $version
             notes = "GeminiScope v$version"
-            pub_date = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+            pub_date = $pubDate
             platforms = @{
               "windows-x86_64" = @{
                 signature = $signature
@@ -133,6 +142,7 @@ jobs:
           Set-Content -Path updater.json -Value $json -Encoding UTF8
 
       - name: Commit updater.json
+        shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -141,7 +151,7 @@ jobs:
           git push origin main || exit 0
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: GeminiScope v${{ steps.version.outputs.version }}
