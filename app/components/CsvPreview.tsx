@@ -10,11 +10,11 @@ export function CsvPreview() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>CSVプレビュー</CardTitle>
+          <CardTitle>CSV Preview</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center py-8">
-            CSVファイルをアップロードしてください
+            Please upload a CSV file
           </p>
         </CardContent>
       </Card>
@@ -28,22 +28,22 @@ export function CsvPreview() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>CSVプレビュー</span>
+          <span>CSV Preview</span>
           <div className="flex items-center space-x-2">
             <Badge variant="secondary">
-              {csvData.length}行
+              {csvData.length} rows
             </Badge>
             <Badge variant="outline">
-              {csvHeaders.length}列
+              {csvHeaders.length} columns
             </Badge>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* カラム情報 */}
+          {/* Column info */}
           <div>
-            <h4 className="text-sm font-medium mb-2">カラム一覧</h4>
+            <h4 className="text-sm font-medium mb-2">Columns</h4>
             <div className="flex flex-wrap gap-2">
               {csvHeaders.map((header, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
@@ -53,7 +53,7 @@ export function CsvPreview() {
             </div>
           </div>
 
-          {/* データテーブル */}
+          {/* Data table */}
           <div className="border rounded-lg overflow-hidden">
             <div className="max-h-96 overflow-auto">
               <Table>
@@ -83,7 +83,7 @@ export function CsvPreview() {
 
           {hasMore && (
             <p className="text-sm text-muted-foreground text-center">
-              ... 他 {csvData.length - 10} 行
+              ... plus {csvData.length - 10} rows
             </p>
           )}
         </div>

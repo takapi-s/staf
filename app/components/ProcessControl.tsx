@@ -33,15 +33,15 @@ export function ProcessControl() {
     config.apiKey.trim() && 
     !isProcessing;
 
-  // キーボードショートカット
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl+Enter で処理開始
+      // Ctrl+Enter to start processing
       if (event.ctrlKey && event.key === 'Enter' && canStart) {
         event.preventDefault();
         handleStart();
       }
-      // Esc で処理中断
+      // Esc to abort
       if (event.key === 'Escape' && isProcessing) {
         event.preventDefault();
         handleAbort();
@@ -84,22 +84,22 @@ export function ProcessControl() {
 
   const getStatusText = () => {
     if (isProcessing) {
-      return '処理中...';
+      return 'Processing...';
     }
     if (results.length > 0 && errors.length === 0) {
-      return '完了';
+      return 'Completed';
     }
     if (errors.length > 0) {
-      return 'エラーあり';
+      return 'With errors';
     }
-    return '待機中';
+    return 'Idle';
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>処理制御</span>
+          <span>Process Control</span>
           <div className="flex items-center space-x-2">
             {getStatusIcon()}
             <Badge variant={isProcessing ? "default" : "secondary"}>
@@ -109,46 +109,46 @@ export function ProcessControl() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 進捗表示 */}
+        {/* Progress */}
         {isProcessing && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>進捗</span>
+              <span>Progress</span>
               <span>{progress.current} / {progress.total}</span>
             </div>
             <Progress value={progressPercentage} className="w-full" />
             <p className="text-xs text-muted-foreground text-center">
-              {progressPercentage}% 完了
+              {progressPercentage}% completed
             </p>
           </div>
         )}
 
-        {/* 統計情報 */}
+        {/* Stats */}
         {(results.length > 0 || errors.length > 0) && (
           <div className="grid grid-cols-2 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {results.length}
               </div>
-              <div className="text-sm text-muted-foreground">成功</div>
+              <div className="text-sm text-muted-foreground">Success</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
                 {errors.length}
               </div>
-              <div className="text-sm text-muted-foreground">エラー</div>
+              <div className="text-sm text-muted-foreground">Errors</div>
             </div>
           </div>
         )}
 
-        {/* エラー表示 */}
+        {/* Error */}
         {lastError && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-800">{lastError}</p>
           </div>
         )}
 
-        {/* 制御ボタン */}
+        {/* Controls */}
         <div className="flex space-x-2">
           {!isProcessing ? (
             <Button 
@@ -157,7 +157,7 @@ export function ProcessControl() {
               className="flex-1"
             >
               <Play className="h-4 w-4 mr-2" />
-              処理開始
+              Start
               <kbd className="ml-2">Ctrl+Enter</kbd>
             </Button>
           ) : (
@@ -167,22 +167,22 @@ export function ProcessControl() {
               className="flex-1"
             >
               <Square className="h-4 w-4 mr-2" />
-              中断
+              Abort
               <kbd className="ml-2">Esc</kbd>
             </Button>
           )}
         </div>
 
-        {/* 設定情報 */}
+        {/* Settings info */}
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>並列数: {config.concurrency} | レート制限: {config.rateLimit} RPM</p>
-          <p>タイムアウト: {config.timeout}秒 | ログレベル: {config.logLevel}</p>
+          <p>Concurrency: {config.concurrency} | Rate limit: {config.rateLimit} RPM</p>
+          <p>Timeout: {config.timeout}s | Log level: {config.logLevel}</p>
         </div>
 
-        {/* 開始前のチェックリスト */}
+        {/* Pre-run checklist */}
         {!isProcessing && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">開始前チェック</h4>
+            <h4 className="text-sm font-medium">Pre-run checklist</h4>
             <div className="space-y-1 text-xs">
               <div className={`flex items-center space-x-2 ${
                 csvData.length > 0 ? 'text-green-600' : 'text-red-600'
@@ -190,7 +190,7 @@ export function ProcessControl() {
                 <div className={`w-2 h-2 rounded-full ${
                   csvData.length > 0 ? 'bg-green-600' : 'bg-red-600'
                 }`} />
-                <span>CSVデータ ({csvData.length}行)</span>
+                <span>CSV data ({csvData.length} rows)</span>
               </div>
               <div className={`flex items-center space-x-2 ${
                 promptTemplate.trim() ? 'text-green-600' : 'text-red-600'
@@ -198,7 +198,7 @@ export function ProcessControl() {
                 <div className={`w-2 h-2 rounded-full ${
                   promptTemplate.trim() ? 'bg-green-600' : 'bg-red-600'
                 }`} />
-                <span>プロンプト設定</span>
+                <span>Prompt configured</span>
               </div>
               <div className={`flex items-center space-x-2 ${
                 config.apiKey.trim() ? 'text-green-600' : 'text-red-600'
@@ -206,7 +206,7 @@ export function ProcessControl() {
                 <div className={`w-2 h-2 rounded-full ${
                   config.apiKey.trim() ? 'bg-green-600' : 'bg-red-600'
                 }`} />
-                <span>APIキー設定</span>
+                <span>API key set</span>
               </div>
             </div>
           </div>

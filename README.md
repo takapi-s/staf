@@ -1,15 +1,15 @@
-# GeminiScope
+# STAF — Structured AI Flow
 
-[![CI](https://github.com/takapi-s/geminiscope/actions/workflows/ci.yml/badge.svg)](https://github.com/takapi-s/geminiscope/actions/workflows/ci.yml)
-[![Release](https://github.com/takapi-s/geminiscope/actions/workflows/release.yml/badge.svg)](https://github.com/takapi-s/geminiscope/actions/workflows/release.yml)
+[![CI](https://github.com/takapi-s/staf/actions/workflows/ci.yml/badge.svg)](https://github.com/takapi-s/staf/actions/workflows/ci.yml)
+[![Release](https://github.com/takapi-s/staf/actions/workflows/release.yml/badge.svg)](https://github.com/takapi-s/staf/actions/workflows/release.yml)
 
-A desktop application that leverages Google Gemini AI to process CSV files.
+An AI-assisted, structured flow to transform CSV data reliably at scale.
 
 ## Features
 
 - 🚀 **High Performance**: Efficiently process large CSV files
 - 🤖 **AI-Powered**: Advanced data transformation and analysis using Google Gemini AI
-- 📊 **Flexible Configuration**: Customizable prompts and output columns
+- 📊 **Structured Outputs**: Explicit columns and schema-first configuration
 - 📝 **Template Management**: Save frequently used settings as templates
 - 💾 **Easy Export**: Export processed results in CSV format
 - 🎨 **Modern UI**: Beautiful interface built with TailwindCSS
@@ -22,12 +22,9 @@ A desktop application that leverages Google Gemini AI to process CSV files.
 ## Quick Start
 
 1. Launch the application
-2. Click the settings icon (⚙️)
-3. Enter your Google Gemini API key
-4. Select a CSV file
-5. Edit the prompt (e.g., "Convert product names to uppercase")
-6. Click the "Start Processing" button
-7. Export the results as CSV when complete
+2. Open Settings (⚙️) and enter your Google Gemini API key
+3. Load a CSV file
+4. Configure prompt and output columns, then Start
 
 ## Installation
 
@@ -52,28 +49,29 @@ npm run tauri:build
 
 ## Usage
 
-1. **Set up Google Gemini API Key**
-   - Enter your API key in the settings dialog
+1. **Set up API Key**: Enter your Google Gemini API key in Settings
+2. **Load CSV**: Select a CSV file to process
+3. **Configure**: Write a prompt and define output columns
+4. **Run & Review**: Start processing, monitor progress, export results
 
-2. **Load CSV File**
-   - Click "Select File" to choose a CSV file
+## Vision
 
-3. **Configure Processing**
-   - Edit the prompt (describe the required transformation)
-   - Specify output columns
-   - Adjust parallel processing count (default: 1)
+- Name: STAF — Structured AI Flow
+- Tagline: Structure your AI data flows
+- One-liner: An AI-assisted, structured flow to transform CSV data reliably at scale.
+- Principles: Structure-first, Repeatability, Observability, Graceful Degradation, Tight Feedback
 
-4. **Execute Processing**
-   - Click "Start Processing" button
-   - Monitor progress in real-time
-
-5. **Export Results**
-   - After processing is complete, save results via "Export CSV"
+### Value Pillars
+- Reliability: deterministic prompting, auditability, clear errors
+- Speed at scale: concurrency, RPM limits, resilient timeouts
+- Clarity: explicit schemas and progress visibility
+- Control: human-in-the-loop review and reversible exports
+- Security: local keys, transparent grounding
 
 ## Project Structure
 
 ```
-geminiscope/
+staf/
 ├── app/                      # Frontend (React)
 │   ├── components/          # UI Components
 │   ├── hooks/               # Custom Hooks

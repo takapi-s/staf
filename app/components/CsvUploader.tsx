@@ -16,7 +16,7 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert('CSVファイルを選択してください');
+      alert('Please select a CSV file');
       return;
     }
 
@@ -30,8 +30,8 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
         skipEmptyLines: true,
         complete: (results) => {
           if (results.errors.length > 0) {
-            console.error('CSV解析エラー:', results.errors);
-            alert('CSVファイルの解析中にエラーが発生しました');
+            console.error('CSV parse error:', results.errors);
+            alert('An error occurred while parsing the CSV');
             return;
           }
 
@@ -42,13 +42,13 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
           onFileLoaded?.();
         },
         error: (error: any) => {
-          console.error('CSV読み込みエラー:', error);
-          alert('CSVファイルの読み込み中にエラーが発生しました');
+          console.error('CSV load error:', error);
+          alert('An error occurred while loading the CSV');
         }
       });
     } catch (error) {
-      console.error('ファイル読み込みエラー:', error);
-      alert('ファイルの読み込み中にエラーが発生しました');
+      console.error('File read error:', error);
+      alert('An error occurred while reading the file');
     } finally {
       setIsLoading(false);
     }
@@ -93,9 +93,9 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
             <div className="flex items-center space-x-2">
               <FileText className="h-5 w-5 text-green-600" />
               <div>
-                <p className="font-medium">CSVファイルが読み込まれました</p>
+                <p className="font-medium">CSV file loaded</p>
                 <p className="text-sm text-muted-foreground">
-                  {csvData.length}行, {csvHeaders.length}列
+                  {csvData.length} rows, {csvHeaders.length} columns
                 </p>
               </div>
             </div>
@@ -128,10 +128,10 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
         >
           <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-medium mb-2">
-            CSVファイルをドラッグ&ドロップ
+            Drag & drop a CSV file
           </h3>
           <p className="text-muted-foreground mb-4">
-            または、下のボタンからファイルを選択してください
+            Or choose a file using the button below
           </p>
           
           <div className="space-y-2">
@@ -146,14 +146,14 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
             <label htmlFor="csv-file-input">
               <Button asChild disabled={isLoading}>
                 <span>
-                  {isLoading ? '読み込み中...' : 'ファイルを選択'}
+                  {isLoading ? 'Loading...' : 'Select file'}
                 </span>
               </Button>
             </label>
           </div>
           
           <p className="text-xs text-muted-foreground mt-4">
-            対応形式: CSV (.csv)
+            Supported format: CSV (.csv)
           </p>
         </div>
       </CardContent>

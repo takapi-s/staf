@@ -25,19 +25,19 @@ export function TemplateManager() {
 
   const handleSaveTemplate = () => {
     if (!templateName.trim() || !promptTemplate.trim()) {
-      toast.error('テンプレート名とプロンプトを入力してください');
+      toast.error('Enter template name and prompt');
       return;
     }
 
     if (editingTemplate) {
       updateTemplate(editingTemplate, { name: templateName.trim() });
-      toast.success('テンプレートを更新しました');
+      toast.success('Template updated');
     } else {
       addTemplate({
         name: templateName.trim(),
         content: promptTemplate,
       });
-      toast.success('テンプレートを保存しました');
+      toast.success('Template saved');
     }
 
     setTemplateName('');
@@ -56,20 +56,20 @@ export function TemplateManager() {
 
   const handleLoadTemplate = (templateId: string) => {
     loadTemplate(templateId);
-    toast.success('テンプレートを読み込みました');
+    toast.success('Template loaded');
   };
 
   const handleDeleteTemplate = (templateId: string) => {
-    if (confirm('このテンプレートを削除しますか？')) {
+    if (confirm('Delete this template?')) {
       deleteTemplate(templateId);
-      toast.success('テンプレートを削除しました');
+      toast.success('Template deleted');
     }
   };
 
-  // キーボードショートカット
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl+S でテンプレート保存
+      // Ctrl+S to save template
       if (event.ctrlKey && event.key === 's' && promptTemplate.trim()) {
         event.preventDefault();
         if (!isDialogOpen) {
@@ -83,7 +83,7 @@ export function TemplateManager() {
   }, [promptTemplate, isDialogOpen]);
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('ja-JP', {
+    return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -96,28 +96,28 @@ export function TemplateManager() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>テンプレート管理</span>
+          <span>Template Manager</span>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Save className="h-4 w-4 mr-2" />
-                保存
+                Save
                 <kbd className="ml-2">Ctrl+S</kbd>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>
-                  {editingTemplate ? 'テンプレート編集' : 'テンプレート保存'}
+                  {editingTemplate ? 'Edit Template' : 'Save Template'}
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium">テンプレート名</label>
+                  <label className="text-sm font-medium">Template name</label>
                   <Input
                     value={templateName}
                     onChange={(e) => setTemplateName(e.target.value)}
-                    placeholder="例: ライブ情報検索"
+                    placeholder="e.g., Live info search"
                     className="mt-1"
                   />
                 </div>
@@ -130,10 +130,10 @@ export function TemplateManager() {
                       setEditingTemplate(null);
                     }}
                   >
-                    キャンセル
+                    Cancel
                   </Button>
                   <Button onClick={handleSaveTemplate}>
-                    {editingTemplate ? '更新' : '保存'}
+                    {editingTemplate ? 'Update' : 'Save'}
                   </Button>
                 </div>
               </div>
@@ -145,8 +145,8 @@ export function TemplateManager() {
         {savedTemplates.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>保存されたテンプレートがありません</p>
-            <p className="text-sm">プロンプトを入力して保存してください</p>
+            <p>No templates saved</p>
+            <p className="text-sm">Enter a prompt and save it</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -154,10 +154,10 @@ export function TemplateManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>名前</TableHead>
-                    <TableHead>作成日</TableHead>
-                    <TableHead>更新日</TableHead>
-                    <TableHead className="w-32">操作</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead className="w-32">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -207,9 +207,9 @@ export function TemplateManager() {
             </div>
             
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>合計 {savedTemplates.length} 個のテンプレート</span>
+              <span>Total {savedTemplates.length} templates</span>
               <Badge variant="outline">
-                最大100個まで保存可能
+                Up to 100 templates
               </Badge>
             </div>
           </div>

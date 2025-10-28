@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "geminiscope",
+  "productName": "STAF",
   "version": "0.1.0",
-  "identifier": "com.geminiscope.app",
+  "identifier": "com.staf.app",
   "build": {
     "frontendDist": "../build/client",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "geminiscope",
+        "title": "STAF",
         "width": 1200,
         "height": 800,
         "resizable": true,
@@ -30,7 +30,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://raw.githubusercontent.com/takapi-s/geminiscope/main/updater.json"
+        "https://raw.githubusercontent.com/takapi-s/staf/main/updater.json"
       ],
       "dialog": true,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5VmZaNGJyL0h2dUg0ZmxNQW16L1hVeCtZWG5HSFNNZUNpQy96WEx3WkU3VUFBQkFBQUFBQUFBQUFBQUlBQUFBQXV1d2V5YkJWSkMvSTlZNGNrYjcvOFljRC81TVhreVVOWDZDTExFblNQYjdlZG5PLzdRL3hVM0xoSVpXSGpuSWtiMTFpVkc0bzdsSGlpYlpaUDdBaFZQS2U2OFZSbnJOQU5ZTllkVTQxUStwY09ZcE5OMitDTEFWRjM3WW9uRk8zQk9zQ2I1MzF6WTg9Cg=="
@@ -41,8 +41,8 @@
     "targets": "all",
     "copyright": "",
     "category": "Utility",
-    "shortDescription": "CSV processing tool using Google Gemini AI",
-    "longDescription": "An efficient CSV processing application powered by Google Gemini AI for data transformation and analysis",
+    "shortDescription": "Structured AI flow for reliable CSV transformation",
+    "longDescription": "An AI-assisted, structured flow to transform CSV data reliably at scale",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

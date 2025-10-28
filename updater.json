@@ -1,8 +1,8 @@
 {
-  "notes": "GeminiScope v0.1.0",
+  "notes": "STAF v0.1.0",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/takapi-s/geminiscope/releases/download/v0.1.0/geminiscope_0.1.0_x64-setup.exe",
+      "url": "https://github.com/takapi-s/staf/releases/download/v0.1.0/staf_0.1.0_x64-setup.exe",
       "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUNUUrSVRpNmN2TVpWUytFMWpiTnJpem5Lc0psa1hHQ2tXMEdNRlRnRVBOWVZ6bDE4NXdWamRhcjE0U1VwLy81UXlndi81WEMxa1M0YTgxQkFGUC9KanUzRUlPVTIrcnd3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYxNjM0MTMzCWZpbGU6Z2VtaW5pc2NvcGVfMC4xLjBfeDY0LXNldHVwLmV4ZQpTK3JtZWdRenlTOHZSakQ5Z25GZU5pT0NLUlB6UFRjemJlakRaUUNvU05MWUJPc2d2QTRVakJobnIyR05xNFFnaU5vM1dja1VTV3ZlMXU1OTh6MkxBUT09Cg=="
     }
   },

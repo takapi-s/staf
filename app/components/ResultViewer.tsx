@@ -13,29 +13,29 @@ export function ResultViewer() {
 
   const handleExport = (type: 'success' | 'errors' | 'all') => {
     try {
-      console.log('[Export] エクスポート開始, type:', type);
+      console.log('[Export] Start export, type:', type);
       const filename = CsvExporter.getDefaultFilename();
       
       if (type === 'all' || type === 'success') {
-        console.log('[Export] 成功結果をエクスポート中...');
+        console.log('[Export] Exporting success results...');
         const { successCsv } = CsvExporter.exportResults(results, [], filename);
-        console.log('[Export] CSV生成完了, length:', successCsv.length);
+        console.log('[Export] CSV generated, length:', successCsv.length);
         CsvExporter.downloadCsv(successCsv, `${filename}-success`);
       }
       
       if ((type === 'all' || type === 'errors') && errors.length > 0) {
-        console.log('[Export] エラー結果をエクスポート中...');
+        console.log('[Export] Exporting error results...');
         const { errorCsv } = CsvExporter.exportResults([], errors, filename);
         if (errorCsv) {
-          console.log('[Export] エラーCSV生成完了, length:', errorCsv.length);
+          console.log('[Export] Error CSV generated, length:', errorCsv.length);
           CsvExporter.downloadCsv(errorCsv, `${filename}-errors`);
         }
       }
       
-      toast.success('エクスポートが完了しました');
+      toast.success('Export completed');
     } catch (error) {
-      console.error('エクスポートエラー:', error);
-      toast.error('エクスポート中にエラーが発生しました');
+      console.error('Export error:', error);
+      toast.error('An error occurred during export');
     }
   };
 
@@ -43,25 +43,25 @@ export function ResultViewer() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>処理結果</CardTitle>
+          <CardTitle>Results</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center py-8">
-            処理を実行すると結果がここに表示されます
+            Run processing to see results here
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  // 配列を展開して複数行に変換（CSVと同様）
+  // Expand arrays to multiple rows (CSV-like)
   const expandResults = (data: any[]) => {
     const expandedRows: any[] = [];
     
     data.forEach(row => {
       const arrayFields: { key: string; value: any[] }[] = [];
       
-      // 配列フィールドを検出
+      // Detect array fields
       Object.keys(row).forEach(key => {
         const value = row[key];
         if (Array.isArray(value) && value.length > 0) {
@@ -70,28 +70,28 @@ export function ResultViewer() {
       });
       
       if (arrayFields.length === 0) {
-        // 配列がない場合はそのまま
+        // No arrays
         expandedRows.push(row);
       } else {
-        // 最大の配列の長さを取得
+        // Get max array length
         const maxLength = Math.max(...arrayFields.map(f => f.value.length));
         
-        // 各インデックスで行を生成
+        // Generate rows per index
         for (let i = 0; i < maxLength; i++) {
           const newRow: any = {};
           
-          // 配列以外のフィールドをコピー
+          // Copy non-array fields
           Object.keys(row).forEach(key => {
             if (!arrayFields.some(f => f.key === key)) {
               newRow[key] = row[key];
             }
           });
           
-          // 配列フィールドを展開
+          // Expand array fields
           arrayFields.forEach(({ key, value }) => {
             if (i < value.length) {
               const item = value[i];
-              // 配列要素がオブジェクトの場合は展開
+              // Expand object elements
               if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
                 Object.keys(item).forEach(subKey => {
                   newRow[`${key}_${subKey}`] = item[subKey];
@@ -110,7 +110,7 @@ export function ResultViewer() {
     return expandedRows;
   };
 
-  // 展開された結果を取得
+  // Get expanded results
   const expandedResults = expandResults(results);
 
   const getResultColumns = () => {
@@ -134,25 +134,25 @@ export function ResultViewer() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>処理結果</span>
+          <span>Results</span>
           <div className="flex items-center space-x-2">
-                         {results.length > 0 && errors.length > 0 && (
+            {results.length > 0 && errors.length > 0 && (
                <Button 
                  variant="outline" 
                  size="sm"
                  onClick={() => handleExport('all')}
                >
                  <Download className="h-4 w-4 mr-2" />
-                 エクスポート
+                Export
                </Button>
              )}
             <div className="flex items-center space-x-2">
               <Badge variant="secondary">
-                成功: {results.length}
+                Success: {results.length}
               </Badge>
               {errors.length > 0 && (
                 <Badge variant="destructive">
-                  エラー: {errors.length}
+                  Errors: {errors.length}
                 </Badge>
               )}
             </div>
@@ -164,24 +164,24 @@ export function ResultViewer() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="success" className="flex items-center space-x-2">
               <CheckCircle className="h-4 w-4" />
-              <span>成功 ({results.length})</span>
+              <span>Success ({results.length})</span>
             </TabsTrigger>
             <TabsTrigger value="errors" className="flex items-center space-x-2">
               <XCircle className="h-4 w-4" />
-              <span>エラー ({errors.length})</span>
+              <span>Errors ({errors.length})</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="success" className="space-y-4">
             {results.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                成功した結果がありません
+                No successful results yet
               </p>
             ) : (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    {expandedResults.length}件の結果を表示中 (元データ: {results.length}件)
+                    Showing {expandedResults.length} rows (from {results.length} source rows)
                   </p>
                   {errors.length === 0 && (
                     <Button 
@@ -190,7 +190,7 @@ export function ResultViewer() {
                       onClick={() => handleExport('success')}
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      エクスポート
+                      Export
                     </Button>
                   )}
                 </div>
@@ -233,19 +233,19 @@ export function ResultViewer() {
           <TabsContent value="errors" className="space-y-4">
             {errors.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                エラーはありません
+                No errors
               </p>
             ) : (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    {errors.length}件のエラーを表示中
+                    Showing {errors.length} errors
                   </p>
                   {results.length === 0 && (
                     <div className="space-x-2">
                       <Button variant="outline" size="sm">
                         <RefreshCw className="h-4 w-4 mr-2" />
-                        再実行
+                        Retry
                       </Button>
                       <Button 
                         variant="outline" 
@@ -253,7 +253,7 @@ export function ResultViewer() {
                         onClick={() => handleExport('errors')}
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        エクスポート
+                        Export
                       </Button>
                     </div>
                   )}
@@ -269,7 +269,7 @@ export function ResultViewer() {
                               {column}
                             </TableHead>
                           ))}
-                          <TableHead className="sticky top-0 bg-background">エラー</TableHead>
+                          <TableHead className="sticky top-0 bg-background">Error</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

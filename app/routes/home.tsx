@@ -11,8 +11,8 @@ import { UpdateChecker } from "../components/UpdateChecker";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "GeminiScope - CSV×Gemini Web Search Tool" },
-    { name: "description", content: "A tool for batch processing CSV files with Gemini Web Search" },
+    { title: "STAF — Structured AI Flow" },
+    { name: "description", content: "Structured AI flow to transform CSV data reliably at scale" },
   ];
 }
 
@@ -24,9 +24,9 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">GeminiScope</h1>
+              <h1 className="text-2xl font-bold">STAF</h1>
               <p className="text-sm text-muted-foreground">
-                CSV×Gemini Web Search Batch Processing Tool
+                Structure your AI data flows
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -37,10 +37,10 @@ export default function Home() {
         </div>
       </header>
 
-      {/* メインコンテンツ */}
+      {/* Main content */}
       <main className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* 左パネル (40%) */}
+          {/* Left panel (40%) */}
           <div className="lg:col-span-2 space-y-6">
             <CsvUploader />
             <CsvPreview />
@@ -48,7 +48,7 @@ export default function Home() {
             <TemplateManager />
           </div>
 
-          {/* 右パネル (60%) */}
+          {/* Right panel (60%) */}
           <div className="lg:col-span-3 space-y-6">
             <PromptEditor />
             <ProcessControl />
@@ -56,10 +56,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* フッター */}
+        {/* Footer */}
         <footer className="mt-8 pt-6 border-t">
           <div className="text-sm text-muted-foreground">
-            <p>GeminiScope v0.1.0 - Powered by Tauri & React</p>
+            <p>STAF v0.1.0 - Powered by Tauri & React</p>
           </div>
         </footer>
       </main>

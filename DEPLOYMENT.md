@@ -1,6 +1,6 @@
-# GeminiScope Deployment Guide
+# STAF Deployment Guide
 
-This document explains how to build and deploy the GeminiScope application for Windows.
+This document explains how to build and deploy the STAF application for Windows.
 
 ## Prerequisites
 
@@ -51,15 +51,15 @@ After the build completes, the following artifacts will be generated:
 
 ```
 src-tauri/target/release/
-├── geminiscope_0.1.0_x64-setup.exe  # Windows Installer
-├── geminiscope.exe                   # Executable
+├── staf_0.1.0_x64-setup.exe  # Windows Installer
+├── staf.exe                   # Executable
 └── bundle/                           # Various package formats
 ```
 
 ### Build Output Explanation
 
-- **`geminiscope_0.1.0_x64-setup.exe`**: Most common distribution format. Users can install by double-clicking
-- **`geminiscope.exe`**: Portable version (no installation required)
+- **`staf_0.1.0_x64-setup.exe`**: Most common distribution format. Users can install by double-clicking
+- **`staf.exe`**: Portable version (no installation required)
 - **MSI/AppX**: Other package formats generated in the `bundle` folder
 
 ## Distribution Methods
@@ -76,7 +76,7 @@ src-tauri/target/release/
 2. Access the Releases page
 3. Click "Draft a new release"
 4. Enter tag, title, and description
-5. Upload the built `geminiscope_0.1.0_x64-setup.exe`
+5. Upload the built `staf_0.1.0_x64-setup.exe`
 6. Publish with "Publish release"
 
 ### 3. Microsoft Store (Windows)
@@ -160,7 +160,7 @@ npm install
    - Commercial certificate authority (DigiCert, etc.)
 2. **Sign with Certificate**
    ```bash
-   signtool sign /f your-cert.pfx /p password /t http://timestamp.digicert.com geminiscope.exe
+   signtool sign /f your-cert.pfx /p password /t http://timestamp.digicert.com staf.exe
    ```
 
 ## Checklist

@@ -38,19 +38,19 @@ export const useConfigStore = create<ConfigState>()(
         const errors: string[] = [];
         
         if (!config.apiKey.trim()) {
-          errors.push('APIキーが設定されていません');
+          errors.push('API key is not set');
         }
         
         if (config.concurrency < 1 || config.concurrency > 10) {
-          errors.push('並列処理数は1-10の範囲で設定してください');
+          errors.push('Concurrency must be between 1 and 10');
         }
         
         if (config.rateLimit < 1 || config.rateLimit > 1000) {
-          errors.push('レート制限は1-1000の範囲で設定してください');
+          errors.push('Rate limit must be between 1 and 1000 RPM');
         }
         
         if (config.timeout < 5 || config.timeout > 300) {
-          errors.push('タイムアウトは5-300秒の範囲で設定してください');
+          errors.push('Timeout must be between 5 and 300 seconds');
         }
         
         return {
@@ -60,7 +60,7 @@ export const useConfigStore = create<ConfigState>()(
       },
     }),
     {
-      name: 'geminiscope-config',
+      name: 'staf-config',
       version: 1,
       storage: {
         getItem: (name) => {

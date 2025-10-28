@@ -42,24 +42,24 @@ export function SettingsDialog() {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Settings className="h-4 w-4 mr-2" />
-          設定
+          Settings
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>設定</DialogTitle>
+          <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* API設定 */}
+          {/* API Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>API設定</CardTitle>
-              <CardDescription>Gemini APIの設定を行います</CardDescription>
+              <CardTitle>API</CardTitle>
+              <CardDescription>Configure the Gemini API</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="apiKey">APIキー</Label>
+                <Label htmlFor="apiKey">API Key</Label>
                 <div className="flex space-x-2">
                   <Input
                     id="apiKey"
@@ -81,15 +81,15 @@ export function SettingsDialog() {
             </CardContent>
           </Card>
 
-          {/* 処理設定 */}
+          {/* Processing Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>処理設定</CardTitle>
-              <CardDescription>並列処理とレート制限の設定</CardDescription>
+              <CardTitle>Processing</CardTitle>
+              <CardDescription>Concurrency and rate limiting</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label>並列処理数: {config.concurrency}</Label>
+                <Label>Concurrency: {config.concurrency}</Label>
                 <Slider
                   value={[config.concurrency]}
                   onValueChange={([value]) => updateConfig({ concurrency: value })}
@@ -99,12 +99,12 @@ export function SettingsDialog() {
                   className="w-full"
                 />
                 <p className="text-sm text-muted-foreground">
-                  同時に実行するリクエスト数（1-10）
+                  Requests in flight (1-10)
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>レート制限: {config.rateLimit} RPM</Label>
+                <Label>Rate limit: {config.rateLimit} RPM</Label>
                 <Slider
                   value={[config.rateLimit]}
                   onValueChange={([value]) => updateConfig({ rateLimit: value })}
@@ -114,12 +114,12 @@ export function SettingsDialog() {
                   className="w-full"
                 />
                 <p className="text-sm text-muted-foreground">
-                  1分あたりの最大リクエスト数
+                  Max requests per minute
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>タイムアウト: {config.timeout}秒</Label>
+                <Label>Timeout: {config.timeout}s</Label>
                 <Slider
                   value={[config.timeout]}
                   onValueChange={([value]) => updateConfig({ timeout: value })}
@@ -129,31 +129,31 @@ export function SettingsDialog() {
                   className="w-full"
                 />
                 <p className="text-sm text-muted-foreground">
-                  リクエストの最大待機時間
+                  Max wait time per request
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* 出力設定 */}
+          {/* Output Settings */}
           <Card>
             <CardHeader>
-              <CardTitle>出力設定</CardTitle>
-              <CardDescription>ファイル出力の設定</CardDescription>
+              <CardTitle>Output</CardTitle>
+              <CardDescription>File export settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="outputFolder">出力フォルダ</Label>
+                <Label htmlFor="outputFolder">Output folder</Label>
                 <Input
                   id="outputFolder"
                   value={config.outputFolder}
                   onChange={(e) => updateConfig({ outputFolder: e.target.value })}
-                  placeholder="デフォルト: ダウンロードフォルダ"
+                  placeholder="Default: Downloads folder"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="logLevel">ログレベル</Label>
+                <Label htmlFor="logLevel">Log level</Label>
                 <Select
                   value={config.logLevel}
                   onValueChange={(value: 'info' | 'debug' | 'error') => 
@@ -173,12 +173,12 @@ export function SettingsDialog() {
             </CardContent>
           </Card>
 
-          {/* バリデーションエラー */}
+          {/* Validation errors */}
           {validationErrors.length > 0 && (
             <Card className="border-destructive">
               <CardContent className="pt-6">
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-destructive">設定エラー</h4>
+                  <h4 className="text-sm font-medium text-destructive">Settings error</h4>
                   <ul className="text-sm text-destructive space-y-1">
                     {validationErrors.map((error, index) => (
                       <li key={index}>• {error}</li>
@@ -189,17 +189,17 @@ export function SettingsDialog() {
             </Card>
           )}
 
-          {/* アクションボタン */}
+          {/* Actions */}
           <div className="flex justify-between">
             <Button variant="outline" onClick={handleReset}>
-              リセット
+              Reset
             </Button>
             <div className="space-x-2">
               <Button variant="outline" onClick={() => setIsOpen(false)}>
-                キャンセル
+                Cancel
               </Button>
               <Button onClick={handleSave}>
-                保存
+                Save
               </Button>
             </div>
           </div>

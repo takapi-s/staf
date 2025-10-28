@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import type { OutputColumn } from '../types';
 
-// ネストされたカラムセクション
+// Nested column section
 function NestedColumnSection({ column, columnIndex, onUpdate }: { column: OutputColumn; columnIndex: number; onUpdate: (updates: Partial<OutputColumn>) => void }) {
   const [isAdding, setIsAdding] = useState(false);
   const [newNestedColumn, setNewNestedColumn] = useState<OutputColumn>({
@@ -46,7 +46,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
   return (
     <div className="ml-8 mt-2 space-y-2 border-l-2 pl-4 border-muted">
       <div className="text-xs font-medium text-muted-foreground">
-        {column.type === 'object' ? 'オブジェクトのプロパティ' : '配列の要素'}
+        {column.type === 'object' ? 'Object properties' : 'Array elements'}
       </div>
       
       {column.nestedColumns?.map((nestedCol, nestedIndex) => (
@@ -56,7 +56,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
               <Input
                 value={nestedCol.name}
                 onChange={(e) => updateNestedColumn(nestedIndex, { name: e.target.value })}
-                placeholder="カラム名"
+                placeholder="Column name"
                 className="font-mono text-xs"
               />
             </div>
@@ -81,7 +81,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
               <Input
                 value={nestedCol.description || ''}
                 onChange={(e) => updateNestedColumn(nestedIndex, { description: e.target.value })}
-                placeholder="説明"
+                placeholder="Description"
                 className="text-xs h-8"
               />
             </div>
@@ -157,7 +157,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
             }}
             className="w-full h-8 text-xs"
           >
-            キャンセル
+            Cancel
           </Button>
         </div>
       ) : (
@@ -168,7 +168,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
           className="w-full h-8 text-xs"
         >
           <Plus className="h-3 w-3 mr-1" />
-          {column.type === 'array' ? '配列要素を追加' : 'プロパティを追加'}
+          {column.type === 'array' ? 'Add array element' : 'Add property'}
         </Button>
       )}
     </div>
@@ -200,7 +200,7 @@ export function OutputColumnEditor() {
     deleteOutputColumn(index);
   };
 
-  // 再帰的にスキーマを生成
+  // Generate schema recursively
   const generateSchema = (columns: OutputColumn[], indent = 2): string => {
     return columns.map(col => {
       const indentStr = ' '.repeat(indent);
@@ -209,11 +209,11 @@ export function OutputColumnEditor() {
       const typeStr = type === 'string' ? 'string' : type === 'number' ? 'number' : type === 'boolean' ? 'boolean' : type;
       
       if (type === 'object' && col.nestedColumns && col.nestedColumns.length > 0) {
-        // ネストされたobjectの場合
+        // Nested object
         const nestedSchema = generateSchema(col.nestedColumns, indent + 2);
         return `${indentStr}"${col.name}": {\n${nestedSchema}\n${indentStr}}${desc}`;
       } else if (type === 'array' && col.nestedColumns && col.nestedColumns.length > 0) {
-        // 配列内にobjectがある場合
+        // Object inside array
         const nestedSchema = generateSchema(col.nestedColumns, indent + 2);
         return `${indentStr}"${col.name}": [\n${indentStr}  {\n${nestedSchema}\n${indentStr}  }\n${indentStr}]${desc}`;
       } else {
@@ -226,28 +226,28 @@ export function OutputColumnEditor() {
     if (outputColumns.length === 0) return '';
     
     const schema = generateSchema(outputColumns);
-    return `\n\n【出力形式】\n以下のJSON形式で出力してください：\n{\n${schema}\n}`;
+    return `\n\n[Output schema]\nPlease output in the following JSON structure:\n{\n${schema}\n}`;
   };
 
   const previewPrompt = outputColumns.length > 0 
-    ? `プロンプトの内容...${exportToPrompt()}`
-    : 'カラムを追加してください';
+    ? `Prompt content...${exportToPrompt()}`
+    : 'Please add columns';
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>出力カラム設定</span>
-          <Badge variant="secondary">{outputColumns.length}カラム</Badge>
+          <span>Output Columns</span>
+          <Badge variant="secondary">{outputColumns.length} columns</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* カラム一覧 */}
+        {/* Columns */}
         <div className="space-y-2">
           {outputColumns.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              <p>出力するカラムを追加してください</p>
-              <p className="text-sm mt-1">追加したカラムの形式でJSON出力を指定します</p>
+              <p>Please add columns to output</p>
+              <p className="text-sm mt-1">Define the JSON structure with your columns</p>
             </div>
           )}
           
@@ -261,7 +261,7 @@ export function OutputColumnEditor() {
                     <Input
                       value={column.name}
                       onChange={(e) => handleUpdateColumn(index, { name: e.target.value })}
-                      placeholder="カラム名"
+                      placeholder="Column name"
                       className="font-mono text-sm"
                     />
                   </div>
@@ -288,7 +288,7 @@ export function OutputColumnEditor() {
                     <Input
                       value={column.description || ''}
                       onChange={(e) => handleUpdateColumn(index, { description: e.target.value })}
-                      placeholder="説明（オプション）"
+                      placeholder="Description (optional)"
                       className="text-xs"
                     />
                   </div>
@@ -378,7 +378,7 @@ export function OutputColumnEditor() {
               }}
               className="w-full"
             >
-              キャンセル
+              Cancel
             </Button>
           </div>
         ) : (
@@ -388,21 +388,21 @@ export function OutputColumnEditor() {
             className="w-full"
           >
             <Plus className="h-4 w-4 mr-2" />
-            カラムを追加
+            Add column
           </Button>
         )}
 
-        {/* プレビュー */}
+        {/* Preview */}
         {outputColumns.length > 0 && (
           <div className="space-y-2">
-            <div className="text-sm font-medium">出力形式プレビュー</div>
+            <div className="text-sm font-medium">Output schema preview</div>
             <div className="p-3 border rounded-lg bg-muted/50">
               <pre className="text-xs font-mono whitespace-pre-wrap">
                 {exportToPrompt()}
               </pre>
             </div>
-            <div className="text-xs text-muted-foreground">
-              この出力形式がプロンプトに自動的に追加されます
+              <div className="text-xs text-muted-foreground">
+              This schema is automatically appended to the prompt
             </div>
           </div>
         )}

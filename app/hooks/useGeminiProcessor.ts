@@ -24,23 +24,23 @@ export function useGeminiProcessor() {
 
   const startProcessing = useCallback(async () => {
     if (csvData.length === 0) {
-      const error = new Error('CSVデータがありません');
-      logger.error('処理開始エラー', error);
-      toast.error('CSVデータをアップロードしてください');
+      const error = new Error('No CSV data');
+      logger.error('Start error', error);
+      toast.error('Please upload a CSV file');
       throw error;
     }
 
     if (!promptTemplate.trim()) {
-      const error = new Error('プロンプトが入力されていません');
-      logger.error('処理開始エラー', error);
-      toast.error('プロンプトを入力してください');
+      const error = new Error('Prompt is empty');
+      logger.error('Start error', error);
+      toast.error('Please enter a prompt');
       throw error;
     }
 
     if (!config.apiKey.trim()) {
-      const error = new Error('APIキーが設定されていません');
-      logger.error('処理開始エラー', error);
-      toast.error('設定画面でAPIキーを設定してください');
+      const error = new Error('API key is missing');
+      logger.error('Start error', error);
+      toast.error('Set your API key in Settings');
       throw error;
     }
 
@@ -48,21 +48,21 @@ export function useGeminiProcessor() {
     logger.setLogLevel(config.logLevel);
 
     // 処理開始
-    logger.info('処理開始', { 
+    logger.info('Processing started', { 
       totalRows: csvData.length, 
       concurrency: config.concurrency,
       rateLimit: config.rateLimit 
     });
     setProcessingState(csvData.length);
-    toast.info('処理を開始しました', {
-      description: `${csvData.length}行のデータを処理します`
+    toast.info('Processing started', {
+      description: `Processing ${csvData.length} rows`
     });
 
     try {
-      // Gemini クライアント初期化
+      // Initialize Gemini client
       const geminiClient = new GeminiClient(config.apiKey);
       
-      // 並列プロセッサー初期化
+      // Initialize parallel processor
       processorRef.current = new ParallelProcessor(
         geminiClient,
         config.concurrency,
@@ -70,7 +70,7 @@ export function useGeminiProcessor() {
         config.timeout * 1000
       );
 
-      // 処理実行
+      // Execute processing
       const { success, errors } = await processorRef.current.processRows(
         csvData,
         promptTemplate,
@@ -79,34 +79,34 @@ export function useGeminiProcessor() {
           updateProgress(current);
         },
         () => {
-          logger.info('処理が中断されました');
-          toast.warning('処理が中断されました');
+          logger.info('Processing aborted');
+          toast.warning('Processing aborted');
         }
       );
 
-      // 結果をストアに追加
+      // Append results to store
       success.forEach(result => addResult(result));
       errors.forEach(error => addError(error));
 
-      // 完了通知
-      logger.info('処理完了', { 
+      // Completion notice
+      logger.info('Processing completed', { 
         success: success.length, 
         errors: errors.length 
       });
       
       if (errors.length === 0) {
-        toast.success('処理が完了しました', {
-          description: `${success.length}件のデータを処理しました`
+        toast.success('Completed', {
+          description: `Processed ${success.length} rows`
         });
       } else {
-        toast.warning('処理が完了しました（エラーあり）', {
-          description: `成功: ${success.length}件, エラー: ${errors.length}件`
+        toast.warning('Completed with errors', {
+          description: `Success: ${success.length}, Errors: ${errors.length}`
         });
       }
 
     } catch (error) {
-      logger.error('処理エラー', error);
-      toast.error('処理中にエラーが発生しました', {
+      logger.error('Processing error', error);
+      toast.error('An error occurred during processing', {
         description: logger.getUserMessage(error)
       });
       throw error;

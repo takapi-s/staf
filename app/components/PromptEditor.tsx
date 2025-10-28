@@ -14,7 +14,7 @@ interface PromptEditorProps {
   onTemplateChange?: (template: string) => void;
 }
 
-// 再帰的にスキーマを生成（OutputColumnEditorと同様の関数）
+// Generate schema recursively (same as OutputColumnEditor)
 function generateSchema(columns: OutputColumn[], indent = 2): string {
   return columns.map(col => {
     const indentStr = ' '.repeat(indent);
@@ -54,76 +54,73 @@ export function PromptEditor({ onTemplateChange }: PromptEditorProps) {
 
   const generatePromptWithAI = async () => {
     if (!config.apiKey.trim()) {
-      toast.error('APIキーが設定されていません');
+      toast.error('API key is not set');
       return;
     }
 
     if (csvHeaders.length === 0) {
-      toast.error('CSVデータがありません');
+      toast.error('No CSV data');
       return;
     }
 
     if (outputColumns.length === 0) {
-      toast.error('出力カラムが設定されていません');
+      toast.error('Output columns are not configured');
       return;
     }
 
     setIsGenerating(true);
-    toast.info('プロンプトを生成中...');
+    toast.info('Generating prompt...');
 
     try {
       const geminiClient = new GeminiClient(config.apiKey);
 
-      // 最初の1行のサンプルデータを取得
+      // Get first-row sample
       const firstRow = csvHeaders.reduce((acc, header) => {
         acc[header] = csvData[0]?.[header] || '';
         return acc;
       }, {} as Record<string, any>);
 
-      // 出力形式を生成
+      // Build output schema
       const outputSchema = generateSchema(outputColumns);
 
-      // プロンプト生成用の指示
-      const generationPrompt = `次の要件に基づいて、Gemini Web Search用のプロンプトを生成してください。
+      // Instruction for prompt generation
+      const generationPrompt = `Generate a prompt for Gemini Web Search based on the following requirements.
 
-【要件】
-1. ペルソナ設定：適切な専門家や調査者としてのペルソナを設定してください
-2. 調査の背景と目的：なぜこの調査を行うのか、どのような目的があるのかを明確にしてください
-3. 入力データの構造を理解し、適切に変数を配置してください
-4. 出力形式に合わせた指示を含めてください
+Requirements:
+1. Persona: set an appropriate expert/investigator persona
+2. Background and objective: clarify why and what to achieve
+3. Understand the input data structure and place variables appropriately
+4. Include instructions aligned to the output schema
 
-【入力CSVカラム】
+Input CSV columns:
 ${csvHeaders.map(h => `- ${h}`).join('\n')}
 
-【サンプルデータ（最初の1行）】
+Sample data (first row):
 ${JSON.stringify(firstRow, null, 2)}
 
-【出力形式】
+Output schema:
 \`\`\`json
 {
 ${outputSchema}
 }
 \`\`\`
 
-【注意事項】
-- 変数は \`{{カラム名}}\` の形式で使用してください
-- プロンプトは自然な日本語で記述してください
-- 調査の目的と背景を明確に記述してください
-- ペルソナ設定を含めてください
-- **重要**: 出力形式のJSON例はプロンプト内に含めないでください（出力形式は自動的にプロンプトに追加されます）
-- 情報が見つからない場合の対応方法を明記してください（例：空の配列を返す、または情報なしを示す旨を記載するなど）
+Notes:
+- Use variables in the form \`{{column_name}}\`
+- Do not include the JSON example itself in the final prompt (the schema is added automatically)
+- Specify how to behave when information is missing (e.g., return an empty array)
 
-生成されたプロンプトのみを返してください。`;
+Return only the generated prompt.`;
 
       const response = await geminiClient.generateContent(generationPrompt, 60000);
       
       setPromptTemplate(response.trim());
       onTemplateChange?.(response.trim());
-      toast.success('プロンプトを生成しました');
+      toast.success('Prompt generated');
 
     } catch (error) {
       console.error('Prompt generation error:', error);
-      toast.error('プロンプトの生成に失敗しました');
+      toast.error('Failed to generate prompt');
     } finally {
       setIsGenerating(false);
     }
@@ -131,19 +128,19 @@ ${outputSchema}
 
   const renderPreview = () => {
     if (!promptTemplate || csvHeaders.length === 0) {
-      return promptTemplate || 'プロンプトを入力してください';
+      return promptTemplate || 'Enter a prompt';
     }
 
-    // 最初の行のデータでプレビューを生成
+    // Generate preview using first row
     const firstRow = csvHeaders.reduce((acc, header) => {
-      acc[header] = `[${header}の値]`;
+      acc[header] = `[value of ${header}]`;
       return acc;
     }, {} as Record<string, string>);
 
     let preview = promptTemplate;
     csvHeaders.forEach(header => {
       const regex = new RegExp(`\\{\\{${header}\\}\\}`, 'g');
-      preview = preview.replace(regex, `[${header}の値]`);
+      preview = preview.replace(regex, `[value of ${header}]`);
     });
 
     return preview;
@@ -153,7 +150,7 @@ ${outputSchema}
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>プロンプトエディタ</span>
+          <span>Prompt Editor</span>
           <div className="flex items-center space-x-2">
             <Button
               variant={isPreviewMode ? "default" : "outline"}
@@ -161,13 +158,13 @@ ${outputSchema}
               onClick={() => setIsPreviewMode(!isPreviewMode)}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {isPreviewMode ? '編集' : 'プレビュー'}
+              {isPreviewMode ? 'Edit' : 'Preview'}
             </Button>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* AIプロンプト生成ボタン */}
+        {/* AI prompt generation */}
         {csvHeaders.length > 0 && outputColumns.length > 0 && (
           <div>
             <Button
@@ -178,15 +175,15 @@ ${outputSchema}
               className="w-full"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isGenerating ? '生成中...' : 'AIでプロンプトを自動生成'}
+              {isGenerating ? 'Generating...' : 'Generate prompt with AI'}
             </Button>
           </div>
         )}
 
-        {/* 変数挿入ボタン */}
+        {/* Variable insertion */}
         {csvHeaders.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium mb-2">利用可能な変数</h4>
+            <h4 className="text-sm font-medium mb-2">Available variables</h4>
             <div className="flex flex-wrap gap-2">
               {csvHeaders.map((header) => (
                 <Button
@@ -204,15 +201,15 @@ ${outputSchema}
           </div>
         )}
 
-                 {/* エディタ/プレビュー */}
+        {/* Editor / Preview */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">
-              {isPreviewMode ? 'プレビュー' : 'プロンプト'}
+              {isPreviewMode ? 'Preview' : 'Prompt'}
             </label>
             {!isPreviewMode && (
               <Badge variant="secondary" className="text-xs">
-                {promptTemplate.length}文字
+                {promptTemplate.length} chars
               </Badge>
             )}
           </div>
@@ -223,17 +220,17 @@ ${outputSchema}
                 {renderPreview()}
               </div>
               
-              {/* 出力形式のプレビュー */}
+              {/* Output schema preview */}
               {outputColumns.length > 0 && (
                 <div className="p-3 border rounded-md bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
                   <div className="text-sm font-semibold mb-2 text-blue-900 dark:text-blue-100">
-                    📋 出力形式
+                    📋 Output schema
                   </div>
                   <pre className="text-xs font-mono whitespace-pre-wrap text-blue-800 dark:text-blue-200 bg-white dark:bg-blue-950/40 p-2 rounded">
 {generateSchema(outputColumns)}
                   </pre>
                   <div className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                    この形式でJSONが出力されます
+                    JSON will be produced in this structure
                   </div>
                 </div>
               )}
@@ -242,26 +239,26 @@ ${outputSchema}
             <Textarea
               value={promptTemplate}
               onChange={(e) => handleTemplateChange(e.target.value)}
-              placeholder={`プロンプトを入力してください...
+              placeholder={`Enter a prompt...
 
-例:
-次のアーティストの2024年のライブ情報を調べてください。
+Example:
+Please find 2024 live information for the following artist.
 
-アーティスト名: {{artist_name}}`}
+Artist: {{artist_name}}`}
               className="min-h-[200px] font-mono text-sm"
             />
           )}
         </div>
 
-        {/* 出力形式プレビュー */}
+        {/* Output schema (non-preview) */}
         {outputColumns.length > 0 && !isPreviewMode && (
           <div className="p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                出力形式が設定されています
+                Output schema is configured
               </div>
               <Badge variant="secondary" className="text-xs">
-                {outputColumns.length}カラム
+                {outputColumns.length} columns
               </Badge>
             </div>
             <pre className="text-xs font-mono whitespace-pre-wrap text-blue-800 dark:text-blue-200">
@@ -270,15 +267,15 @@ ${outputSchema}
           </div>
         )}
 
-        {/* ヒント */}
+        {/* Hints */}
         <div className="text-xs text-muted-foreground space-y-1">
-          <p>• 変数は <code className="bg-muted px-1 rounded">{'{{変数名}}'}</code> の形式で使用できます</p>
+          <p>• Use variables like <code className="bg-muted px-1 rounded">{'{{variable_name}}'}</code></p>
           {outputColumns.length === 0 ? (
-            <p>• 出力形式は「出力カラム設定」で指定できます</p>
+            <p>• Define the output schema in Output Columns</p>
           ) : (
-            <p className="text-green-600 dark:text-green-400">✓ 出力形式が設定されています。プレビューで確認できます</p>
+            <p className="text-green-600 dark:text-green-400">✓ Output schema is set. Check it in Preview</p>
           )}
-          <p>• プレビューモードで変数の展開と出力形式を確認できます</p>
+          <p>• Preview mode shows variable expansion and schema</p>
         </div>
       </CardContent>
     </Card>
