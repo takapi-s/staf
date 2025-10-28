@@ -46,14 +46,21 @@ jobs:
       - name: Update version files
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          # package.json
-          (Get-Content package.json) -replace '"version": ".*"', "`"version`: `"$version`"" | Set-Content package.json
-          # src-tauri/Cargo.toml
-          (Get-Content src-tauri/Cargo.toml) -replace 'version = ".*"', "version = `"$version`"" | Set-Content src-tauri/Cargo.toml
-          # src-tauri/tauri.conf.json - より安全な置換
-          $tauriConfig = Get-Content src-tauri/tauri.conf.json -Raw
-          $tauriConfig = $tauriConfig -replace '"version":\s*"[^"]*"', "`"version`: `"$version`""
-          Set-Content src-tauri/tauri.conf.json -Value $tauriConfig
+          
+          # package.json - より安全な置換
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $packageJson.version = $version
+          $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json
+          
+          # src-tauri/Cargo.toml - より安全な置換
+          $cargoToml = Get-Content src-tauri/Cargo.toml -Raw
+          $cargoToml = $cargoToml -replace 'version = ".*"', "version = `"$version`""
+          Set-Content src-tauri/Cargo.toml -Value $cargoToml
+          
+          # src-tauri/tauri.conf.json - JSONとして安全に処理
+          $tauriConfig = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $tauriConfig.version = $version
+          $tauriConfig | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
 
       - name: Build application
         run: npm run tauri:build
