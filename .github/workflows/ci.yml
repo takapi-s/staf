@@ -53,12 +53,16 @@ jobs:
 
       - name: Check installer
         run: |
-          $installerPath = "src-tauri\target\release\bundle\nsis\geminiscope_0.1.0_x64-setup.exe"
-          if (Test-Path $installerPath) {
+          $base = "src-tauri\target\release\bundle\nsis"
+          $pattern = "STAF_*_x64-setup.exe"
+          $files = Get-ChildItem -Path $base -Filter $pattern -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+          if ($files -and $files.Length -gt 0) {
+            $installerPath = $files[0].FullName
             Write-Host "✅ Installer created successfully"
             Get-Item $installerPath | Select-Object Name, Length, LastWriteTime
           } else {
             Write-Host "❌ Installer creation failed"
+            Write-Host "Searched: $base with pattern $pattern"
             exit 1
           }
 

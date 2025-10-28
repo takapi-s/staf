@@ -80,7 +80,7 @@ jobs:
             exit 1
           }
           
-          $installerPath = ".\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe"
+          $installerPath = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe"
           if (-not (Test-Path $installerPath)) {
             Write-Error "Installer not found: $installerPath"
             exit 1
@@ -103,7 +103,7 @@ jobs:
         id: signature
         shell: pwsh
         run: |
-          $sigFile = ".\src-tauri\target\release\bundle\nsis\geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
+          $sigFile = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
           if (-not (Test-Path $sigFile)) {
             Write-Error "Signature file not found: $sigFile"
             exit 1
@@ -129,12 +129,12 @@ jobs:
           
           $json = @{
             version = $version
-            notes = "GeminiScope v$version"
+            notes = "STAF v$version"
             pub_date = $pubDate
             platforms = @{
               "windows-x86_64" = @{
                 signature = $signature
-                url = "https://github.com/$repository/releases/download/v$version/geminiscope_$version`_x64-setup.exe"
+                url = "https://github.com/$repository/releases/download/v$version/STAF_$version`_x64-setup.exe"
               }
             }
           } | ConvertTo-Json -Depth 10
@@ -167,18 +167,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: GeminiScope v${{ steps.version.outputs.version }}
+          name: STAF v${{ steps.version.outputs.version }}
           body: |
-            ## GeminiScope v${{ steps.version.outputs.version }}
+            ## STAF v${{ steps.version.outputs.version }}
             
             ### インストール方法
-            - 下の「geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe」をダウンロード
+            - 下の「STAF_${{ steps.version.outputs.version }}_x64-setup.exe」をダウンロード
             - ダブルクリックしてインストール
             
             ### 自動更新
             アプリ内の「更新を確認」ボタンから自動更新が可能です。
           files: |
-            src-tauri/target/release/bundle/nsis/geminiscope_${{ steps.version.outputs.version }}_x64-setup.exe
+            src-tauri/target/release/bundle/nsis/STAF_${{ steps.version.outputs.version }}_x64-setup.exe
           draft: false
           prerelease: false
         env:
