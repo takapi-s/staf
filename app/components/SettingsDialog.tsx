@@ -94,7 +94,7 @@ export function SettingsDialog() {
                   value={[config.concurrency]}
                   onValueChange={([value]) => updateConfig({ concurrency: value })}
                   min={1}
-                  max={10}
+                  max={1500}
                   step={1}
                   className="w-full"
                 />
@@ -109,7 +109,7 @@ export function SettingsDialog() {
                   value={[config.rateLimit]}
                   onValueChange={([value]) => updateConfig({ rateLimit: value })}
                   min={1}
-                  max={1000}
+                  max={1500}
                   step={1}
                   className="w-full"
                 />

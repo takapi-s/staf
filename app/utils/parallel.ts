@@ -32,6 +32,8 @@ export class ParallelProcessor {
     this.abortController = new AbortController();
     const success: ProcessedRow[] = [];
     const errors: ErrorRow[] = [];
+    let completed = 0;
+    const total = rows.length;
 
     const processRow = async (row: Row, index: number): Promise<void> => {
       if (this.abortController?.signal.aborted) {
@@ -74,6 +76,9 @@ export class ParallelProcessor {
           _rowIndex: index,
         };
         errors.push(errorRow);
+      } finally {
+        // この行の処理（成功/失敗）に関わらず完了数を進める
+        completed++;
       }
     };
 
@@ -82,9 +87,6 @@ export class ParallelProcessor {
       const tasks = rows.map((row, index) =>
         this.limit(() => processRow(row, index))
       );
-
-      let completed = 0;
-      const total = rows.length;
 
       // 進捗監視
       const progressInterval = setInterval(() => {

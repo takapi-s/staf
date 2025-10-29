@@ -1,4 +1,4 @@
-export type LogLevel = 'info' | 'debug' | 'error';
+export type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
 export class Logger {
   private static instance: Logger;
@@ -20,8 +20,9 @@ export class Logger {
   private shouldLog(level: LogLevel): boolean {
     const levels: Record<LogLevel, number> = {
       error: 0,
-      info: 1,
-      debug: 2,
+      warn: 1,
+      info: 2,
+      debug: 3,
     };
     return levels[level] <= levels[this.logLevel];
   }
@@ -39,6 +40,12 @@ export class Logger {
   info(message: string, data?: any): void {
     if (this.shouldLog('info')) {
       console.log(this.formatMessage('info', message, data));
+    }
+  }
+
+  warn(message: string, data?: any): void {
+    if (this.shouldLog('warn')) {
+      console.warn(this.formatMessage('warn', message, data));
     }
   }
 

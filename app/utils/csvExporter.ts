@@ -12,7 +12,15 @@ export class CsvExporter {
       // 配列を含むフィールドを探す
       const arrayFields: { key: string; value: any[] }[] = [];
       Object.keys(row).forEach(key => {
-        const value = row[key];
+        let value = row[key];
+        // 非配列のオブジェクトはJSON文字列化して [object Object] を防止
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          try {
+            value = JSON.stringify(value);
+          } catch (_) {
+            value = String(value);
+          }
+        }
         console.log(`[expandArrays] Checking field "${key}":`, typeof value, Array.isArray(value), value);
         if (Array.isArray(value) && value.length > 0) {
           console.log(`[expandArrays] Found array field "${key}" with ${value.length} items`);

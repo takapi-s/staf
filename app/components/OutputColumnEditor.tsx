@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppStore } from '../stores/appStore';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -8,6 +8,11 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import type { OutputColumn } from '../types';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 
 // Nested column section
 function NestedColumnSection({ column, columnIndex, onUpdate }: { column: OutputColumn; columnIndex: number; onUpdate: (updates: Partial<OutputColumn>) => void }) {
@@ -17,6 +22,13 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
     description: '',
     type: 'string',
   });
+  const nestedSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+  const nestedIds = useMemo(
+    () => (column.nestedColumns || []).map((_, i) => `nested-${columnIndex}-${i}`),
+    [column.nestedColumns, columnIndex]
+  );
 
   const addNestedColumn = () => {
     if (newNestedColumn.name.trim()) {
@@ -49,56 +61,74 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
         {column.type === 'object' ? 'Object properties' : 'Array elements'}
       </div>
       
-      {column.nestedColumns?.map((nestedCol, nestedIndex) => (
-        <div key={nestedIndex} className="flex items-start gap-2 p-2 border rounded bg-background">
-          <div className="flex-1 grid grid-cols-12 gap-2">
-            <div className="col-span-5">
-              <Input
-                value={nestedCol.name}
-                onChange={(e) => updateNestedColumn(nestedIndex, { name: e.target.value })}
-                placeholder="Column name"
-                className="font-mono text-xs"
-              />
-            </div>
-            
-            <div className="col-span-3">
-              <Select
-                value={nestedCol.type || 'string'}
-                onValueChange={(value) => updateNestedColumn(nestedIndex, { type: value as any })}
-              >
-                <SelectTrigger className="text-xs h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="string">string</SelectItem>
-                  <SelectItem value="number">number</SelectItem>
-                  <SelectItem value="boolean">boolean</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="col-span-3">
-              <Input
-                value={nestedCol.description || ''}
-                onChange={(e) => updateNestedColumn(nestedIndex, { description: e.target.value })}
-                placeholder="Description"
-                className="text-xs h-8"
-              />
-            </div>
-            
-            <div className="col-span-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteNestedColumn(nestedIndex)}
-                className="h-8 w-8"
-              >
-                <Trash2 className="h-3 w-3 text-destructive" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      ))}
+      <DndContext
+        sensors={nestedSensors}
+        onDragEnd={({ active, over }) => {
+          if (!over || active.id === over.id) return;
+          const from = nestedIds.indexOf(String(active.id));
+          const to = nestedIds.indexOf(String(over.id));
+          if (from === -1 || to === -1) return;
+          const next = arrayMove(column.nestedColumns || [], from, to);
+          onUpdate({ nestedColumns: next });
+        }}
+      >
+        <SortableContext items={nestedIds} strategy={verticalListSortingStrategy}>
+          {(column.nestedColumns || []).map((nestedCol, nestedIndex) => (
+            <SortableRow key={nestedIds[nestedIndex]} id={nestedIds[nestedIndex]}
+              children={({ attributes, listeners, setNodeRef, style }) => (
+                <div ref={setNodeRef} style={style} {...attributes} className="flex items-start gap-2 p-2 border rounded bg-background">
+                  <div className="mt-1 cursor-grab select-none" {...listeners} title="Drag to reorder">
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 grid grid-cols-12 gap-2">
+                    <div className="col-span-5">
+                      <Input
+                        value={nestedCol.name}
+                        onChange={(e) => updateNestedColumn(nestedIndex, { name: e.target.value })}
+                        placeholder="Column name"
+                        className="font-mono text-xs"
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <Select
+                        value={nestedCol.type || 'string'}
+                        onValueChange={(value) => updateNestedColumn(nestedIndex, { type: value as any })}
+                      >
+                        <SelectTrigger className="text-xs h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="string">string</SelectItem>
+                          <SelectItem value="number">number</SelectItem>
+                          <SelectItem value="boolean">boolean</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-3">
+                      <Input
+                        value={nestedCol.description || ''}
+                        onChange={(e) => updateNestedColumn(nestedIndex, { description: e.target.value })}
+                        placeholder="Description"
+                        className="text-xs h-8"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteNestedColumn(nestedIndex)}
+                        className="h-8 w-8"
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
       
       {isAdding ? (
         <div className="p-2 border rounded bg-muted/50 space-y-2">
@@ -175,14 +205,35 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
   );
 }
 
+function SortableRow({ id, children }: { id: string; children: (dragProps: { attributes: any; listeners: any; setNodeRef: (node: HTMLElement | null) => void; style: React.CSSProperties }) => React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  } as React.CSSProperties;
+
+  return (
+    <>
+      {children({ attributes, listeners, setNodeRef, style })}
+    </>
+  );
+}
+
 export function OutputColumnEditor() {
   const { outputColumns, addOutputColumn, updateOutputColumn, deleteOutputColumn, setOutputColumns } = useAppStore();
   const [isAdding, setIsAdding] = useState(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+  const ids = useMemo(() => outputColumns.map((_, i) => `col-${i}`), [outputColumns]);
   const [newColumn, setNewColumn] = useState<OutputColumn>({
     name: '',
     description: '',
     type: 'string',
   });
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
 
   const handleAddColumn = () => {
     if (newColumn.name.trim()) {
@@ -198,6 +249,16 @@ export function OutputColumnEditor() {
 
   const handleDeleteColumn = (index: number) => {
     deleteOutputColumn(index);
+  };
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = ids.indexOf(String(active.id));
+    const to = ids.indexOf(String(over.id));
+    if (from === -1 || to === -1) return;
+    const next = arrayMove(outputColumns, from, to);
+    setOutputColumns(next);
   };
 
   // Generate schema recursively
@@ -238,7 +299,96 @@ export function OutputColumnEditor() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Output Columns</span>
-          <Badge variant="secondary">{outputColumns.length} columns</Badge>
+          <div className="flex items-center gap-2">
+            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">Import JSON</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Import JSON schema or sample</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2">
+                  <Textarea
+                    value={importText}
+                    onChange={(e) => { setImportText(e.target.value); setImportError(null); }}
+                    placeholder='{"title":"string","price":0,"inStock":true,"meta":{"brand":"string"},"items":[{"name":"string"}]}'
+                    className="h-48 text-xs font-mono"
+                  />
+                  {importError && (
+                    <div className="text-xs text-destructive">{importError}</div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => { setIsImportOpen(false); setImportText(''); setImportError(null); }}>Cancel</Button>
+                  <Button onClick={() => {
+                    try {
+                      const parsed = JSON.parse(importText);
+                      const toColumns = (val: any, key?: string): OutputColumn[] => {
+                        const inferType = (v: any): OutputColumn['type'] => {
+                          if (v === null || v === undefined) return 'string';
+                          if (Array.isArray(v)) return 'array';
+                          switch (typeof v) {
+                            case 'string': return 'string';
+                            case 'number': return 'number';
+                            case 'boolean': return 'boolean';
+                            case 'object': return 'object';
+                            default: return 'string';
+                          }
+                        };
+
+                        const buildFromObject = (obj: Record<string, any>): OutputColumn[] => {
+                          return Object.keys(obj).map((k) => {
+                            const t = inferType(obj[k]);
+                            if (t === 'object') {
+                              return {
+                                name: k,
+                                type: 'object',
+                                nestedColumns: toColumns(obj[k])
+                              } as OutputColumn;
+                            }
+                            if (t === 'array') {
+                              const arr = Array.isArray(obj[k]) ? obj[k] : [];
+                              const first = arr.find((x: any) => x && typeof x === 'object') ?? arr[0];
+                              return {
+                                name: k,
+                                type: 'array',
+                                nestedColumns: first && typeof first === 'object' && !Array.isArray(first)
+                                  ? toColumns(first)
+                                  : undefined,
+                              } as OutputColumn;
+                            }
+                            return { name: k, type: t } as OutputColumn;
+                          });
+                        };
+
+                        if (Array.isArray(val)) {
+                          const first = val.find((x) => x !== null && x !== undefined);
+                          if (first && typeof first === 'object' && !Array.isArray(first)) {
+                            return buildFromObject(first as Record<string, any>);
+                          }
+                          return [{ name: key ?? 'items', type: 'array' }];
+                        }
+                        if (typeof val === 'object' && val) {
+                          return buildFromObject(val as Record<string, any>);
+                        }
+                        return [{ name: key ?? 'value', type: inferType(val) }];
+                      };
+
+                      const newCols = toColumns(parsed);
+                      setOutputColumns(newCols);
+                      setIsImportOpen(false);
+                      setImportText('');
+                      setImportError(null);
+                    } catch (e: any) {
+                      setImportError(e?.message ?? 'Invalid JSON');
+                    }
+                  }}>Import</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Badge variant="secondary">{outputColumns.length} columns</Badge>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -251,70 +401,76 @@ export function OutputColumnEditor() {
             </div>
           )}
           
-          {outputColumns.map((column, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
-                <GripVertical className="h-5 w-5 text-muted-foreground mt-2" />
-                
-                <div className="flex-1 grid grid-cols-12 gap-2">
-                  <div className="col-span-5">
-                    <Input
-                      value={column.name}
-                      onChange={(e) => handleUpdateColumn(index, { name: e.target.value })}
-                      placeholder="Column name"
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                  
-                  <div className="col-span-3">
-                    <Select
-                      value={column.type || 'string'}
-                      onValueChange={(value) => handleUpdateColumn(index, { type: value as any })}
-                    >
-                      <SelectTrigger className="text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="string">string</SelectItem>
-                        <SelectItem value="number">number</SelectItem>
-                        <SelectItem value="boolean">boolean</SelectItem>
-                        <SelectItem value="object">object</SelectItem>
-                        <SelectItem value="array">array</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="col-span-3">
-                    <Input
-                      value={column.description || ''}
-                      onChange={(e) => handleUpdateColumn(index, { description: e.target.value })}
-                      placeholder="Description (optional)"
-                      className="text-xs"
-                    />
-                  </div>
-                  
-                  <div className="col-span-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteColumn(index)}
-                      className="h-8 w-8"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              {(column.type === 'object' || column.type === 'array') && (
-                <NestedColumnSection
-                  column={column}
-                  columnIndex={index}
-                  onUpdate={(updates) => handleUpdateColumn(index, updates)}
+          <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+            <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+              {outputColumns.map((column, index) => (
+                <SortableRow key={ids[index]} id={ids[index]}
+                  children={({ attributes, listeners, setNodeRef, style }) => (
+                    <div className="space-y-2">
+                      <div ref={setNodeRef} style={style} {...attributes} className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
+                        <div className="mt-2 cursor-grab select-none" {...listeners} title="Drag to reorder">
+                          <GripVertical className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 grid grid-cols-12 gap-2">
+                          <div className="col-span-5">
+                            <Input
+                              value={column.name}
+                              onChange={(e) => handleUpdateColumn(index, { name: e.target.value })}
+                              placeholder="Column name"
+                              className="font-mono text-sm"
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <Select
+                              value={column.type || 'string'}
+                              onValueChange={(value) => handleUpdateColumn(index, { type: value as any })}
+                            >
+                              <SelectTrigger className="text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="string">string</SelectItem>
+                                <SelectItem value="number">number</SelectItem>
+                                <SelectItem value="boolean">boolean</SelectItem>
+                                <SelectItem value="object">object</SelectItem>
+                                <SelectItem value="array">array</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="col-span-3">
+                            <Input
+                              value={column.description || ''}
+                              onChange={(e) => handleUpdateColumn(index, { description: e.target.value })}
+                              placeholder="Description (optional)"
+                              className="text-xs"
+                            />
+                          </div>
+                          <div className="col-span-1 flex items-center gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteColumn(index)}
+                              className="h-8 w-8"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      {(column.type === 'object' || column.type === 'array') && (
+                        <NestedColumnSection
+                          column={column}
+                          columnIndex={index}
+                          onUpdate={(updates) => handleUpdateColumn(index, updates)}
+                        />
+                      )}
+                    </div>
+                  )}
                 />
-              )}
-            </div>
-          ))}
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
 
         {/* 追加フォーム */}
