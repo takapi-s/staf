@@ -45,12 +45,12 @@ export default function Home() {
             <CsvUploader />
             <CsvPreview />
             <OutputColumnEditor />
-            <TemplateManager />
           </div>
 
           {/* Right panel (60%) */}
           <div className="lg:col-span-3 space-y-6">
             <PromptEditor />
+            <TemplateManager />
             <ProcessControl />
             <ResultViewer />
           </div>

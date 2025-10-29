@@ -16,6 +16,7 @@ interface AppState {
   // 実行状態
   isProcessing: boolean;
   progress: { current: number; total: number };
+  activeRequests: number; // 進行中のリクエスト数
   results: ProcessedRow[];
   errors: ErrorRow[];
   
@@ -34,6 +35,7 @@ interface AppState {
   // 処理制御
   startProcessing: (total: number) => void;
   updateProgress: (current: number) => void;
+  updateActiveRequests: (count: number) => void;
   addResult: (result: ProcessedRow) => void;
   addError: (error: ErrorRow) => void;
   finishProcessing: () => void;
@@ -52,6 +54,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   outputColumns: [],
   isProcessing: false,
   progress: { current: 0, total: 0 },
+  activeRequests: 0,
   results: [],
   errors: [],
   
@@ -131,6 +134,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       isProcessing: true,
       progress: { current: 0, total },
+      activeRequests: 0,
       results: [],
       errors: [],
     });
@@ -140,6 +144,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({
       progress: { ...state.progress, current },
     }));
+  },
+  
+  updateActiveRequests: (count) => {
+    set({ activeRequests: count });
   },
   
   addResult: (result) => {
@@ -163,6 +171,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       results: [],
       errors: [],
       progress: { current: 0, total: 0 },
+      activeRequests: 0,
     });
   },
   
@@ -176,6 +185,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       results: [],
       errors: [],
       progress: { current: 0, total: 0 },
+      activeRequests: 0,
       isProcessing: false,
     });
   },

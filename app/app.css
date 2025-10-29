@@ -133,3 +133,32 @@ body {
     @apply px-1.5 py-0.5 text-xs font-mono bg-muted-foreground/10 text-muted-foreground border border-border rounded;
   }
 }
+
+/* Prompt generating blink animation */
+@keyframes btn-blink {
+  0%, 100% { opacity: 1; filter: saturate(1); }
+  50% { opacity: 0.55; filter: saturate(1.2); }
+}
+
+.blink {
+  animation: btn-blink 0.9s ease-in-out infinite;
+}
+
+/* Horizontal wave shimmer for generating state */
+@keyframes btn-wave {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.loading-wave {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--color-primary) 20%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: btn-wave 1.2s ease-in-out infinite;
+}

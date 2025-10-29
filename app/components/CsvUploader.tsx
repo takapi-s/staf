@@ -56,6 +56,7 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     
     const files = Array.from(e.dataTransfer.files);
@@ -66,11 +67,20 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    try { e.dataTransfer.dropEffect = 'copy'; } catch {}
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(true);
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
   }, []);
 
@@ -124,6 +134,7 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
         >
           <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />

@@ -20,6 +20,7 @@ export function ProcessControl() {
     csvData, 
     promptTemplate, 
     progress, 
+    activeRequests,
     results, 
     errors 
   } = useAppStore();
@@ -65,6 +66,7 @@ export function ProcessControl() {
     abortProcessing();
   };
 
+  // 完了数のみで進捗率を計算
   const progressPercentage = progress.total > 0 
     ? Math.round((progress.current / progress.total) * 100) 
     : 0;
@@ -116,10 +118,20 @@ export function ProcessControl() {
               <span>Progress</span>
               <span>{progress.current} / {progress.total}</span>
             </div>
-            <Progress value={progressPercentage} className="w-full" />
-            <p className="text-xs text-muted-foreground text-center">
-              {progressPercentage}% completed
-            </p>
+            <Progress 
+              value={progress.current} 
+              activeValue={activeRequests}
+              maxValue={progress.total}
+              className="w-full" 
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{progressPercentage}% completed</span>
+              {activeRequests > 0 && (
+                <span className="text-blue-600">
+                  {activeRequests} active request{activeRequests !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
         )}
 

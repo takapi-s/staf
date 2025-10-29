@@ -9,6 +9,7 @@ import { FileText, Plus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { GeminiClient } from '../utils/geminiClient';
 import type { OutputColumn } from '../types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface PromptEditorProps {
   onTemplateChange?: (template: string) => void;
@@ -39,6 +40,7 @@ export function PromptEditor({ onTemplateChange }: PromptEditorProps) {
   const { config } = useConfigStore();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [promptLang, setPromptLang] = useState<'en' | 'ja'>('ja');
 
   const insertVariable = (header: string) => {
     const variable = `{{${header}}}`;
@@ -69,7 +71,7 @@ export function PromptEditor({ onTemplateChange }: PromptEditorProps) {
     }
 
     setIsGenerating(true);
-    toast.info('Generating prompt...');
+    toast.info(promptLang === 'ja' ? 'プロンプトを生成しています…' : 'Generating prompt...');
 
     try {
       const geminiClient = new GeminiClient(config.apiKey);
@@ -83,14 +85,42 @@ export function PromptEditor({ onTemplateChange }: PromptEditorProps) {
       // Build output schema
       const outputSchema = generateSchema(outputColumns);
 
-      // Instruction for prompt generation
-      const generationPrompt = `Generate a prompt for Gemini Web Search based on the following requirements.
+      // Instruction for prompt generation (EN/JA)
+      const generationPrompt = promptLang === 'ja'
+        ? `以下の要件に基づいて、Gemini の Google 検索グラウンディングで用いる日本語プロンプトを生成してください。
+
+要件:
+1. ペルソナ: 適切な専門家/調査員のペルソナを設定する
+2. 背景と目的: 何のために何を達成するかを明確化する
+3. 入力データ構造を理解し、変数( {{column_name}} )を適切に配置する
+4. 出力スキーマに沿った指示を含める
+
+入力CSVの列:
+${csvHeaders.map(h => `- ${h}`).join('\n')}
+
+サンプルデータ（1行目）:
+${JSON.stringify(firstRow, null, 2)}
+
+出力スキーマ:
+\`\`\`json
+{
+${outputSchema}
+}
+\`\`\`
+
+注意:
+- 変数は \`{{column_name}}\` の形式で用いる
+- 最終プロンプトにJSONの例は含めない（スキーマは別途付与される）
+- 情報が不足している場合の挙動（例: 空配列を返す）を明確に指示する
+
+出力は日本語プロンプトの本文のみを返してください。`
+        : `Generate an English prompt for Gemini Google Search grounding with these requirements.
 
 Requirements:
 1. Persona: set an appropriate expert/investigator persona
-2. Background and objective: clarify why and what to achieve
-3. Understand the input data structure and place variables appropriately
-4. Include instructions aligned to the output schema
+2. Background & objective: clarify purpose and target
+3. Place variables ( {{column_name}} ) properly based on input structure
+4. Include instructions aligned with the output schema
 
 Input CSV columns:
 ${csvHeaders.map(h => `- ${h}`).join('\n')}
@@ -107,20 +137,36 @@ ${outputSchema}
 
 Notes:
 - Use variables in the form \`{{column_name}}\`
-- Do not include the JSON example itself in the final prompt (the schema is added automatically)
-- Specify how to behave when information is missing (e.g., return an empty array)
+- Do not include the JSON example itself in the final prompt
+- Specify behavior when information is missing (e.g., return an empty array)
 
-Return only the generated prompt.`;
+Return only the generated prompt body.`;
 
       const response = await geminiClient.generateContent(generationPrompt, 60000);
-      
-      setPromptTemplate(response.trim());
-      onTemplateChange?.(response.trim());
-      toast.success('Prompt generated');
+
+      // タイプ風に段階的に反映（簡易ストリーミング表現）
+      const text = response.trim();
+      setPromptTemplate('');
+      onTemplateChange?.('');
+      let i = 0;
+      const step = Math.max(1, Math.floor(text.length / 120)); // だいたい2秒程度を想定
+      await new Promise<void>((resolve) => {
+        const timer = setInterval(() => {
+          i = Math.min(text.length, i + step);
+          const chunk = text.slice(0, i);
+          setPromptTemplate(chunk);
+          onTemplateChange?.(chunk);
+          if (i >= text.length) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 16);
+      });
+      toast.success(promptLang === 'ja' ? 'プロンプトを生成しました' : 'Prompt generated');
 
     } catch (error) {
       console.error('Prompt generation error:', error);
-      toast.error('Failed to generate prompt');
+      toast.error(promptLang === 'ja' ? 'プロンプト生成に失敗しました' : 'Failed to generate prompt');
     } finally {
       setIsGenerating(false);
     }
@@ -166,16 +212,30 @@ Return only the generated prompt.`;
       <CardContent className="space-y-4">
         {/* AI prompt generation */}
         {csvHeaders.length > 0 && outputColumns.length > 0 && (
-          <div>
+          <div className="space-y-2">
+            {/* 言語選択 */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Language</span>
+              <Select value={promptLang} onValueChange={(v: 'en' | 'ja') => setPromptLang(v)}>
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ja">日本語</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button
               variant="default"
               size="sm"
               onClick={generatePromptWithAI}
               disabled={isGenerating}
-              className="w-full"
+              className={`w-full ${isGenerating ? 'loading-wave' : ''}`}
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isGenerating ? 'Generating...' : 'Generate prompt with AI'}
+              {isGenerating ? (promptLang === 'ja' ? '生成中…' : 'Generating...') : (promptLang === 'ja' ? 'AIでプロンプト生成' : 'Generate prompt with AI')}
             </Button>
           </div>
         )}

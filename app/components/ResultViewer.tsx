@@ -110,8 +110,8 @@ export function ResultViewer() {
     return expandedRows;
   };
 
-  // Get expanded results
-  const expandedResults = expandResults(results);
+  // Get expanded results and limit to first 5 rows
+  const expandedResults = expandResults(results).slice(0, 5);
 
   const getResultColumns = () => {
     if (expandedResults.length === 0) return [];
@@ -181,7 +181,7 @@ export function ResultViewer() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    Showing {expandedResults.length} rows (from {results.length} source rows)
+                    Showing first 5 rows of {expandedResults.length} total rows (from {results.length} source rows)
                   </p>
                   {errors.length === 0 && (
                     <Button 
@@ -239,7 +239,7 @@ export function ResultViewer() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
-                    Showing {errors.length} errors
+                    Showing first 5 of {errors.length} errors
                   </p>
                   {results.length === 0 && (
                     <div className="space-x-2">
@@ -273,7 +273,7 @@ export function ResultViewer() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {errors.map((error, index) => (
+                        {errors.slice(0, 5).map((error, index) => (
                           <TableRow key={index}>
                             {errorColumns.map((column, colIndex) => {
                               const value = error[column];

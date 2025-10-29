@@ -41,12 +41,12 @@ export const useConfigStore = create<ConfigState>()(
           errors.push('API key is not set');
         }
         
-        if (config.concurrency < 1 || config.concurrency > 10) {
-          errors.push('Concurrency must be between 1 and 10');
+        if (config.concurrency < 1 || config.concurrency > 1500) {
+          errors.push('Concurrency must be between 1 and 1500');
         }
         
-        if (config.rateLimit < 1 || config.rateLimit > 1000) {
-          errors.push('Rate limit must be between 1 and 1000 RPM');
+        if (config.rateLimit < 1 || config.rateLimit > 1500) {
+          errors.push('Rate limit must be between 1 and 1500 RPM');
         }
         
         if (config.timeout < 5 || config.timeout > 300) {

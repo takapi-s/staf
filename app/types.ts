@@ -29,7 +29,7 @@ export interface AppConfig {
   rateLimit: number;
   timeout: number;
   outputFolder: string;
-  logLevel: 'info' | 'debug' | 'error';
+  logLevel: 'error' | 'warn' | 'info' | 'debug';
 }
 
 // 出力カラム設定
