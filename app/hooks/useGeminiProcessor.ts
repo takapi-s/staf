@@ -89,8 +89,22 @@ export function useGeminiProcessor() {
           const base = { ...csvData[payload.index] } as Record<string, any>;
           const data = payload.data;
           let merged: Record<string, any> = {};
+          
+          // payload.dataがJSONの場合、直接展開
           if (data && typeof data === 'object' && !Array.isArray(data)) {
-            merged = { ...base, ...data };
+            // resultフィールドがテキストの場合、それを除去して他のフィールドを使う
+            if (data.result && typeof data.result === 'string') {
+              // resultフィールドだけを含むオブジェクトの場合は無視
+              const otherKeys = Object.keys(data).filter(k => k !== 'result');
+              if (otherKeys.length > 0) {
+                merged = { ...base, ...data };
+              } else {
+                // resultフィールド以外に何もない場合は、baseのまま
+                merged = base;
+              }
+            } else {
+              merged = { ...base, ...data };
+            }
           } else if (Array.isArray(data)) {
             // トップ5に制限
             const top5 = data.slice(0, 5);

@@ -14,7 +14,8 @@ impl GeminiClientRust {
   pub fn new(api_key: String, timeout_secs: u64) -> Result<Self> {
     let http = Client::builder()
       // ALPNに任せる（HTTP/2 or HTTP/1.1）。Prior Knowledgeは使わない
-      .pool_max_idle_per_host(8)
+      .pool_max_idle_per_host(10)
+      .pool_idle_timeout(Duration::from_secs(90))
       .connect_timeout(Duration::from_secs(30)) // 接続タイムアウトを30秒に延長
       .tcp_keepalive(Duration::from_secs(30))
       .use_rustls_tls()
@@ -33,7 +34,7 @@ impl GeminiClientRust {
       tools: vec![Tool { google_search: GoogleSearch {} }],
     };
 
-    // リトライ 3 回、指数バックオフ（送信エラーも含む）
+    // リトライ 5 回、指数バックオフ（送信エラーも含む）
     let mut attempt: u32 = 0;
     loop {
       let res = match self
@@ -47,7 +48,7 @@ impl GeminiClientRust {
       {
         Ok(resp) => resp,
         Err(e) => {
-          if attempt >= 3 {
+          if attempt >= 5 {
             // より詳細なエラー情報を提供
             let error_msg = if e.is_timeout() {
               "Connection timeout - check network connection"
@@ -80,7 +81,7 @@ impl GeminiClientRust {
           return Ok(GenerateResponse { text, grounding_metadata });
         }
         StatusCode::TOO_MANY_REQUESTS | StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => {
-          if attempt >= 3 {
+          if attempt >= 5 {
             let text = res.text().await.unwrap_or_default();
             return Err(anyhow!(format!("retry exceeded: {}", text)));
           }

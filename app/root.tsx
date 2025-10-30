@@ -44,12 +44,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  // グローバルでドラッグ&ドロップのデフォルト挙動（ファイルナビゲーション）を抑止
-  // ドロップゾーン内では子側で stopPropagation 済みのため、干渉しない
+  // グローバルでドラッグ&ドロップのデフォルト挙動を抑止
+  // dragDropEnabled: false の設定により、CsvUploaderでHTML5のドロップイベントが使用可能
   if (typeof window !== 'undefined') {
     // すでに登録済みで二重に付かないように一度だけ登録
     (window as any).__staf_dnd_bound__ = (window as any).__staf_dnd_bound__ || (() => {
-      const prevent = (e: Event) => { e.preventDefault(); };
+      const prevent = (e: Event) => { 
+        // CsvUploaderのdropゾーン外でのファイルナビゲーションを抑止
+        const target = e.target as HTMLElement;
+        if (!target.closest('[data-drop-zone]')) {
+          e.preventDefault();
+        }
+      };
       window.addEventListener('dragover', prevent);
       window.addEventListener('drop', prevent);
       return true;

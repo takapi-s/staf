@@ -13,7 +13,7 @@ const defaultConfig: AppConfig = {
   apiKey: '',
   concurrency: 3,
   rateLimit: 60,
-  timeout: 30,
+  timeout: 60,
   outputFolder: '',
   logLevel: 'info',
 };

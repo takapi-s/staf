@@ -127,6 +127,7 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
     <Card>
       <CardContent className="p-6">
         <div
+          data-drop-zone="csv-upload"
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
             isDragOver
               ? 'border-primary bg-primary/5'

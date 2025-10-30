@@ -7,21 +7,36 @@ export class CsvExporter {
     errors: ErrorRow[],
     filename: string = 'gemini-results'
   ): { successCsv: string; errorCsv: string | null } {
+    // ネストされたオブジェクトをフラット化する関数
+    const flattenObject = (obj: Record<string, any>, prefix = ''): Record<string, any> => {
+      const flattened: Record<string, any> = {};
+      
+      Object.keys(obj).forEach(key => {
+        const value = obj[key];
+        const newKey = prefix ? `${prefix}_${key}` : key;
+        
+        if (value && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+          // ネストされたオブジェクトの場合は再帰的にフラット化
+          const nested = flattenObject(value, newKey);
+          Object.assign(flattened, nested);
+        } else {
+          flattened[newKey] = value;
+        }
+      });
+      
+      return flattened;
+    };
+
     // 配列を展開して複数行に変換
     const expandArrays = (row: Record<string, any>): Record<string, any>[] => {
+      // まずネストされたオブジェクトをフラット化
+      const flattenedRow = flattenObject(row);
+      
       // 配列を含むフィールドを探す
       const arrayFields: { key: string; value: any[] }[] = [];
-      Object.keys(row).forEach(key => {
-        let value = row[key];
-        // 非配列のオブジェクトはJSON文字列化して [object Object] を防止
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          try {
-            value = JSON.stringify(value);
-          } catch (_) {
-            value = String(value);
-          }
-        }
-        console.log(`[expandArrays] Checking field "${key}":`, typeof value, Array.isArray(value), value);
+      Object.keys(flattenedRow).forEach(key => {
+        const value = flattenedRow[key];
+        console.log(`[expandArrays] Checking field "${key}":`, typeof value, Array.isArray(value));
         if (Array.isArray(value) && value.length > 0) {
           console.log(`[expandArrays] Found array field "${key}" with ${value.length} items`);
           arrayFields.push({ key, value: value });
@@ -31,7 +46,7 @@ export class CsvExporter {
 
       // 配列がない場合は元の行をそのまま返す
       if (arrayFields.length === 0) {
-        return [row];
+        return [flattenedRow];
       }
 
       // 最大の配列の長さを取得
@@ -42,10 +57,10 @@ export class CsvExporter {
       for (let i = 0; i < maxLength; i++) {
         // まず配列フィールド以外のフィールドをコピー
         const newRow: Record<string, any> = {};
-        Object.keys(row).forEach(key => {
+        Object.keys(flattenedRow).forEach(key => {
           // 配列フィールドは除外
           if (!arrayFields.some(f => f.key === key)) {
-            newRow[key] = row[key];
+            newRow[key] = flattenedRow[key];
           }
         });
         
@@ -55,9 +70,8 @@ export class CsvExporter {
             const item = value[i];
             // 配列要素がオブジェクトの場合は展開
             if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-              Object.keys(item).forEach(subKey => {
-                newRow[`${key}_${subKey}`] = item[subKey];
-              });
+              const nested = flattenObject(item, key);
+              Object.assign(newRow, nested);
             } else {
               newRow[key] = item;
             }
@@ -79,7 +93,17 @@ export class CsvExporter {
       const { _status, _error, _rawResponse, ...data } = result;
       console.log(`[CSV Export] Row ${idx}: Original data:`, JSON.stringify(data, null, 2));
       
-      const rows = expandArrays(data);
+      // resultフィールドが生テキストの場合、それを除去
+      const cleanedData = { ...data };
+      if (cleanedData.result && typeof cleanedData.result === 'string') {
+        // resultフィールドだけがあり、他のデータがない場合は除外
+        const otherKeys = Object.keys(cleanedData).filter(k => k !== 'result' && !k.startsWith('_'));
+        if (otherKeys.length === 0) {
+          delete cleanedData.result;
+        }
+      }
+      
+      const rows = expandArrays(cleanedData);
       console.log(`[CSV Export] Row ${idx}: Expanded to ${rows.length} rows:`, JSON.stringify(rows, null, 2));
       
       expandedData.push(...rows);

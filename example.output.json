@@ -1,12 +1,14 @@
 {
     "name": "string",
-    "events": {
-      "title": "string",
-      "ticketprice_adult": "number",
-      "ticketprice_child": "number",
-      "startdate": "string",
-      "enddate": "string", 
-      "participants": "string",
-      "reason": "string" 
-    }
+    "events": [
+      {
+        "title": "string",
+        "ticketprice_adult": "string",
+        "ticketprice_child": "string",
+        "startdate": "string",
+        "enddate": "string",
+        "participants": "string",
+        "reason": "string"
+      }
+    ]
 }
