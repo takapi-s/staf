@@ -1,11 +1,11 @@
 {
+  "notes": "STAF v0.1.3",
+  "version": "0.1.3",
+  "pub_date": "2025-11-02T09:43:03Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/takapi-s/staf/releases/download/v0.1.2/STAF_0.1.2_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUNUUrSVRpNmN2TVJwOGdkdkRrOG9vU0ZWTVBJTXhrb2hrdmRwcFZhbm5uWkUyejJGcVpNWjdCRnVGdUV1SjhXOW5ZNU9RdWo3TTJrTUxaejlOMTJBb2NvMC9tZEZVWXc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYxODc1MjMzCWZpbGU6U1RBRl8wLjEuMl94NjQtc2V0dXAuZXhlClBiNlZIa1N1VkxuVVBjMmlwQzBnWVFtV0FJZTVPRVQyZmRvS0ZuRDNCT3h2OUJTdTdLZE5odWFkQXJ0WnBIZlpheWtNNFZicFM5ekRRR1gzbmpFRUR3PT0K"
+      "url": "https://github.com/takapi-s/staf/releases/download/v0.1.3/STAF_0.1.3_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUNUUrSVRpNmN2TVFBY3ZXNmgweFFmeGpvVW1pOVJNZ0pEODVCK1ZxSy9LZGpZaFc1bS9YbS9uU1lJdnJrU1h3cWdTWjFsSzFjOW92N0Erai9TYXdzaGxKRHdrZ2czYWc0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzYyMDc2NTgzCWZpbGU6U1RBRl8wLjEuM194NjQtc2V0dXAuZXhlCnFjUS9lcGVYOS96YnNqck5SV3pHNno2OVFReGlIdk5vRTZQK3hxYzdxbGdyNUx0bnNIQlRPdHZsczBHaHkzRWdHcjF4QllBZnlIekEza00yMUxKUURBPT0K"
     }
-  },
-  "version": "0.1.2",
-  "notes": "STAF v0.1.2",
-  "pub_date": "2025-10-31T01:47:14Z"
+  }
 }
