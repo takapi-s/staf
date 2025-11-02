@@ -64,9 +64,22 @@ export function UpdateChecker() {
       toast.success('Update completed. Restarting app...');
       
       // App will restart automatically
-    } catch (error) {
+    } catch (error: any) {
       console.error('Install error:', error);
-      toast.error('Failed to install update');
+      
+      // エラーメッセージを詳細に表示
+      let errorMessage = 'Failed to install update';
+      
+      if (error?.message) {
+        errorMessage = `Failed to install update: ${error.message}`;
+      } else if (typeof error === 'string') {
+        errorMessage = `Failed to install update: ${error}`;
+      }
+      
+      toast.error(errorMessage, {
+        duration: 8000,
+      });
+      
       setIsInstalling(false);
       setProgress(0);
     }
