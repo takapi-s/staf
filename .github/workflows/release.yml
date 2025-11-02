@@ -74,6 +74,7 @@ jobs:
           }
           
           $installerPath = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe"
+          
           if (-not (Test-Path $installerPath)) {
             Write-Error "Installer not found: $installerPath"
             exit 1
@@ -102,18 +103,34 @@ jobs:
             exit 1
           }
           
-          # 署名ファイルの内容を読み取り、改行を削除し、Base64エンコード
-          $sigContent = Get-Content $sigFile -Raw
+          # minisign署名ファイルから署名を抽出
+          # 形式: 
+          # untrusted comment: ...
+          # <base64_line1>
+          # trusted comment: ...
+          # <base64_line2>
+          $lines = Get-Content $sigFile
+          $signatureLines = @()
           
-          # 改行文字を削除（CRLF、LF、CRすべて）
-          $sigContent = $sigContent -replace "`r`n", ""
-          $sigContent = $sigContent -replace "`n", ""
-          $sigContent = $sigContent -replace "`r", ""
+          foreach ($line in $lines) {
+            $trimmed = $line.Trim()
+            # コメント行をスキップし、Base64文字列と思われる行を取得
+            if ($trimmed -and -not $trimmed.StartsWith("untrusted comment:") -and -not $trimmed.StartsWith("trusted comment:") -and -not $trimmed.StartsWith("#")) {
+              $signatureLines += $trimmed
+            }
+          }
           
-          # 署名ファイルの内容をUTF-8バイト配列に変換してBase64エンコード
-          $bytes = [System.Text.Encoding]::UTF8.GetBytes($sigContent)
-          $sig = [Convert]::ToBase64String($bytes)
+          # 署名行を結合（通常は2行）
+          $sig = $signatureLines -join ""
           
+          if (-not $sig) {
+            Write-Error "Could not extract signature from signature file"
+            Write-Host "File content:"
+            Get-Content $sigFile | ForEach-Object { Write-Host $_ }
+            exit 1
+          }
+          
+          Write-Host "Signature extracted successfully (length: $($sig.Length))"
           "signature=$sig" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Generate updater.json
