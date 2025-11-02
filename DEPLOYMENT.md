@@ -167,7 +167,7 @@ npm install
 
 Before building, verify:
 
-- [ ] Update version number in `tauri.conf.json`
+- [ ] Update version number in `package.json` (other files will auto-sync)
 - [ ] App icon is properly configured
 - [ ] Copyright information is correctly stated
 - [ ] License file is included

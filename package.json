@@ -8,9 +8,10 @@
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
+    "sync-version": "node scripts/sync-version.mjs",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "tauri:build": "npm run sync-version && tauri build",
     "test:build": "npm run typecheck && npm run build && npm run tauri:build",
     "ci:test": "npm ci && npm run test:build"
   },

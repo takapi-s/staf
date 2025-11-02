@@ -137,7 +137,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
               <Input
                 value={newNestedColumn.name}
                 onChange={(e) => setNewNestedColumn({ ...newNestedColumn, name: e.target.value })}
-                placeholder="カラム名"
+                placeholder="Column name"
                 className="font-mono text-xs h-8"
               />
             </div>
@@ -162,7 +162,7 @@ function NestedColumnSection({ column, columnIndex, onUpdate }: { column: Output
               <Input
                 value={newNestedColumn.description || ''}
                 onChange={(e) => setNewNestedColumn({ ...newNestedColumn, description: e.target.value })}
-                placeholder="説明"
+                placeholder="Description"
                 className="text-xs h-8"
               />
             </div>
@@ -481,7 +481,7 @@ export function OutputColumnEditor() {
                 <Input
                   value={newColumn.name}
                   onChange={(e) => setNewColumn({ ...newColumn, name: e.target.value })}
-                  placeholder="カラム名"
+                  placeholder="Column name"
                   className="font-mono text-sm"
                 />
               </div>
@@ -508,7 +508,7 @@ export function OutputColumnEditor() {
                 <Input
                   value={newColumn.description || ''}
                   onChange={(e) => setNewColumn({ ...newColumn, description: e.target.value })}
-                  placeholder="説明（オプション）"
+                  placeholder="Description (optional)"
                   className="text-xs"
                 />
               </div>

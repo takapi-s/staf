@@ -94,41 +94,37 @@ Create `updater.json` in your GitHub repository:
 
 #### Steps to Release a New Version
 
-1. **Update Version Numbers**
+1. **Update Version Number**
    ```bash
-   # package.json
-   "version": "0.1.1"
-   
-   # src-tauri/Cargo.toml
-   version = "0.1.1"
-   
-   # src-tauri/tauri.conf.json
-   "version": "0.1.1"
+   # package.json - Update only this file
+   "version": "0.1.2"
    ```
+   
+   Other version files (`src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`) will be automatically synced during build.
 
 2. **Build and Sign**
    ```bash
    npm run tauri:build
-   npx @tauri-apps/cli signer update --key ~/.tauri/myapp.key src-tauri/target/release/bundle/nsis/staf_0.1.1_x64-setup.exe
+   npx @tauri-apps/cli signer update --key ~/.tauri/myapp.key src-tauri/target/release/bundle/nsis/staf_0.1.2_x64-setup.exe
    ```
 
 3. **Update updater.json**
    ```json
    {
-     "version": "0.1.1",
+     "version": "0.1.2",
      "notes": "Bug fixes and performance improvements",
      "pub_date": "2024-01-15T00:00:00Z",
      "platforms": {
        "windows-x86_64": {
          "signature": "New signature",
-         "url": "https://github.com/YOUR_USERNAME/YOUR_REPO/releases/download/v0.1.1/staf_0.1.1_x64-setup.exe"
+         "url": "https://github.com/YOUR_USERNAME/YOUR_REPO/releases/download/v0.1.2/staf_0.1.2_x64-setup.exe"
        }
      }
    }
    ```
 
 4. **Publish Release**
-   - Publish version 0.1.1 on GitHub Releases
+   - Publish version 0.1.2 on GitHub Releases
    - Commit updater.json
 
 ### For Users

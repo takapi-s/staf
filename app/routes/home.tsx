@@ -8,6 +8,7 @@ import { TemplateManager } from "../components/TemplateManager";
 import { ProcessControl } from "../components/ProcessControl";
 import { ResultViewer } from "../components/ResultViewer";
 import { UpdateChecker } from "../components/UpdateChecker";
+import packageJson from "../../package.json";
 
 export const meta: MetaFunction = () => {
   return [
@@ -59,7 +60,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="mt-8 pt-6 border-t">
           <div className="text-sm text-muted-foreground">
-            <p>STAF v0.1.0 - Powered by Tauri & React</p>
+            <p>STAF v{packageJson.version} - Powered by Tauri & React</p>
           </div>
         </footer>
       </main>
