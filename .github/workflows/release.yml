@@ -67,53 +67,23 @@ jobs:
         id: signature
         shell: pwsh
         run: |
+          $version = "${{ steps.version.outputs.version }}"
           $sigFile = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
+          $repository = "${{ github.repository }}"
+          
           if (-not (Test-Path $sigFile)) {
             Write-Error "Signature file not found: $sigFile"
             exit 1
           }
           
-          # minisign署名ファイルから署名を抽出
-          # 形式: 
-          # untrusted comment: ...
-          # <base64_line1>
-          # trusted comment: ...
-          # <base64_line2>
-          $lines = Get-Content $sigFile
-          $signatureLines = @()
-          
-          foreach ($line in $lines) {
-            $trimmed = $line.Trim()
-            # コメント行をスキップし、Base64文字列と思われる行を取得
-            if ($trimmed -and -not $trimmed.StartsWith("untrusted comment:") -and -not $trimmed.StartsWith("trusted comment:") -and -not $trimmed.StartsWith("#")) {
-              $signatureLines += $trimmed
-            }
-          }
-          
-          # 署名行を結合（通常は2行）
-          $sig = $signatureLines -join ""
-          
-          if (-not $sig) {
-            Write-Error "Could not extract signature from signature file"
-            Write-Host "File content:"
-            Get-Content $sigFile | ForEach-Object { Write-Host $_ }
+          # minisign の .sig ファイル全文をそのまま使用（改行は \n に正規化）
+          $sigRaw = Get-Content $sigFile -Raw
+          if (-not $sigRaw) {
+            Write-Error "Signature content is empty, cannot generate updater.json"
             exit 1
           }
-          
-          Write-Host "Signature extracted successfully (length: $($sig.Length))"
-          "signature=$sig" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-      - name: Generate updater.json
-        shell: pwsh
-        run: |
-          $version = "${{ steps.version.outputs.version }}"
-          $signature = "${{ steps.signature.outputs.signature }}"
-          $repository = "${{ github.repository }}"
-          
-          if (-not $signature) {
-            Write-Error "Signature is empty, cannot generate updater.json"
-            exit 1
-          }
+          # CRLF -> LF に統一（ConvertTo-Json 時に "\n" としてエスケープされる）
+          $signature = $sigRaw -replace "\r\n?", "`n"
           
           $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           
