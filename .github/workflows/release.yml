@@ -53,15 +53,42 @@ jobs:
           $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
           $packageJson.version = $version
           $packageJson | ConvertTo-Json -Depth 10 | Set-Content package.json -Encoding UTF8
-          
-          # npmスクリプトで他のファイルも自動同期
-          npm run sync-version
 
-      - name: Build application
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build Tauri app
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri:build
+
+      - name: Check build artifacts
+        shell: pwsh
+        run: |
+          if (Test-Path "src-tauri\target\release\app.exe") {
+            Write-Host "✅ Tauri app built successfully"
+            Get-Item "src-tauri\target\release\app.exe" | Select-Object Name, Length, LastWriteTime
+          } else {
+            Write-Host "❌ Tauri app build failed"
+            exit 1
+          }
+
+      - name: Check installer
+        shell: pwsh
+        run: |
+          $base = "src-tauri\target\release\bundle\nsis"
+          $pattern = "STAF_*_x64-setup.exe"
+          $files = Get-ChildItem -Path $base -Filter $pattern -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+          if ($files -and $files.Length -gt 0) {
+            $installerPath = $files[0].FullName
+            Write-Host "✅ Installer created successfully"
+            Get-Item $installerPath | Select-Object Name, Length, LastWriteTime
+          } else {
+            Write-Host "❌ Installer creation failed"
+            Write-Host "Searched: $base with pattern $pattern"
+            exit 1
+          }
 
       - name: Read signature
         id: signature
