@@ -39,7 +39,7 @@ jobs:
         env:
           # テスト用の環境変数（署名なしでビルド）
           TAURI_PRIVATE_KEY: ""
-          TAURI_PRIVATE_KEY_PASSWORD: ""
+          TAURI_KEY_PASSWORD: ""
 
       - name: Check build artifacts
         run: |
