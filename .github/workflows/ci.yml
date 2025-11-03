@@ -29,12 +29,11 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Build Tauri app (test)
+      - name: Build Tauri app (signed)
         run: npm run tauri:build
         env:
-          # テスト用の環境変数（署名なしでビルド）
-          TAURI_SIGNING_PRIVATE_KEY: ""
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Check build artifacts
         shell: pwsh
