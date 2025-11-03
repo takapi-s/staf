@@ -58,92 +58,31 @@ jobs:
           npm run sync-version
 
       - name: Build application
-        run: npm run tauri:build
-
-      - name: Sign installer
-        shell: pwsh
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_PRIVATE_KEY_PASSWORD }}
-        run: |
-          $ErrorActionPreference = "Stop"
-          
-          if (-not $env:TAURI_PRIVATE_KEY) {
-            Write-Error "TAURI_PRIVATE_KEY is required but not set"
-            exit 1
-          }
-          
-          $installerPath = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe"
-          
-          if (-not (Test-Path $installerPath)) {
-            Write-Error "Installer not found: $installerPath"
-            exit 1
-          }
-
-          Write-Host "Signing installer: $installerPath"
-          if ($env:TAURI_PRIVATE_KEY_PASSWORD) {
-            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" --password "$env:TAURI_PRIVATE_KEY_PASSWORD" $installerPath
-          } else {
-            npx @tauri-apps/cli signer sign --private-key "$env:TAURI_PRIVATE_KEY" $installerPath
-          }
-
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Signing failed with exit code $LASTEXITCODE"
-            exit 1
-          }
-          Write-Host "Signing completed successfully"
-
-      - name: Read signature
-        id: signature
-        shell: pwsh
-        run: |
-          $sigFile = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
-          if (-not (Test-Path $sigFile)) {
-            Write-Error "Signature file not found: $sigFile"
-            exit 1
-          }
-          
-          # minisign署名ファイルから署名を抽出
-          # 形式: 
-          # untrusted comment: ...
-          # <base64_line1>
-          # trusted comment: ...
-          # <base64_line2>
-          $lines = Get-Content $sigFile
-          $signatureLines = @()
-          
-          foreach ($line in $lines) {
-            $trimmed = $line.Trim()
-            # コメント行をスキップし、Base64文字列と思われる行を取得
-            if ($trimmed -and -not $trimmed.StartsWith("untrusted comment:") -and -not $trimmed.StartsWith("trusted comment:") -and -not $trimmed.StartsWith("#")) {
-              $signatureLines += $trimmed
-            }
-          }
-          
-          # 署名行を結合（通常は2行）
-          $sig = $signatureLines -join ""
-          
-          if (-not $sig) {
-            Write-Error "Could not extract signature from signature file"
-            Write-Host "File content:"
-            Get-Content $sigFile | ForEach-Object { Write-Host $_ }
-            exit 1
-          }
-          
-          Write-Host "Signature extracted successfully (length: $($sig.Length))"
-          "signature=$sig" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        run: npm run tauri:build
 
       - name: Generate updater.json
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.version }}"
-          $signature = "${{ steps.signature.outputs.signature }}"
+          $sigFile = ".\src-tauri\target\release\bundle\nsis\STAF_${{ steps.version.outputs.version }}_x64-setup.exe.sig"
           $repository = "${{ github.repository }}"
           
-          if (-not $signature) {
-            Write-Error "Signature is empty, cannot generate updater.json"
+          if (-not (Test-Path $sigFile)) {
+            Write-Error "Signature file not found: $sigFile"
             exit 1
           }
+          
+          # minisign の .sig ファイル全文をそのまま使用（改行は \n に正規化）
+          $sigRaw = Get-Content $sigFile -Raw
+          if (-not $sigRaw) {
+            Write-Error "Signature content is empty, cannot generate updater.json"
+            exit 1
+          }
+          # CRLF -> LF に統一（ConvertTo-Json 時に "\n" としてエスケープされる）
+          $signature = $sigRaw -replace "\r\n?", "`n"
           
           $pubDate = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
           
