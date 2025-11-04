@@ -4,5 +4,6 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
+  // reactRouter を先頭に配置してフレームワークのコンテキストを確実に注入
+  plugins: [reactRouter(), tailwindcss(), tsconfigPaths()],
 });

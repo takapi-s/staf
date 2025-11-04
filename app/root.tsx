@@ -6,12 +6,11 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-import { useEffect } from "react";
+ 
 
 import type { LinksFunction } from "react-router";
 import { ToastProvider } from "./components/ToastProvider";
 import "./app.css";
-import { runPostUpdateMaintenance } from "./utils/startup";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -63,9 +62,7 @@ export default function App() {
       return true;
     })();
   }
-  useEffect(() => {
-    runPostUpdateMaintenance();
-  }, []);
+  
   return <Outlet />;
 }
 
