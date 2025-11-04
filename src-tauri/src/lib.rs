@@ -2,6 +2,13 @@
 pub fn run() {
   use tauri::Manager;
   tauri::Builder::default()
+    .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+      if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+      }
+    }))
     .plugin(tauri_plugin_log::Builder::default().build())
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_dialog::init())
@@ -9,7 +16,8 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       crate::processor::process_rows,
       crate::processor::abort_processing,
-      gemini_generate_with_search
+      gemini_generate_with_search,
+      recreate_windows_shortcut
     ])
     .setup(|app| {
       app.manage(crate::processor::CancelHolder::default());
@@ -28,4 +36,90 @@ async fn gemini_generate_with_search(api_key: String, prompt: String) -> Result<
   crate::gemini::generate_with_search_once(api_key, prompt, 60)
     .await
     .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn recreate_windows_shortcut(name: Option<String>, description: Option<String>) -> Result<(), String> {
+  #[cfg(target_os = "windows")]
+  {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use std::path::{Path, PathBuf};
+    use windows::core::{GUID, HRESULT};
+    use windows::Win32::Foundation::PWSTR;
+    use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED};
+    use windows::Win32::System::Com::StructuredStorage::IPersistFile;
+    use windows::Win32::UI::Shell::{IShellLinkW, KnownFolders::FOLDERID_Desktop, ShellLink, SHGetKnownFolderPath};
+
+    unsafe fn to_wide(s: &OsStr) -> Vec<u16> {
+      s.encode_wide().chain(std::iter::once(0)).collect()
+    }
+
+    unsafe {
+      // COM初期化
+      let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+
+      // デスクトップパス取得
+      let mut raw_path: PWSTR = PWSTR::null();
+      let hr: HRESULT = SHGetKnownFolderPath(&FOLDERID_Desktop, 0, None, &mut raw_path);
+      if hr.is_err() {
+        CoUninitialize();
+        return Err(format!("failed to get Desktop path: 0x{:x}", hr.0));
+      }
+      let desktop = if raw_path.is_null() {
+        CoUninitialize();
+        return Err("Desktop path not found".into());
+      } else {
+        let mut len = 0usize;
+        while *raw_path.0.add(len) != 0 { len += 1; }
+        let slice = std::slice::from_raw_parts(raw_path.0, len);
+        let s = String::from_utf16_lossy(slice);
+        let p = PathBuf::from(s);
+        CoTaskMemFree(Some(raw_path.0 as _));
+        p
+      };
+
+      // 実行ファイル
+      let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+      let exe_dir = exe.parent().unwrap_or(Path::new("."));
+      let default_name = exe.file_stem().unwrap_or_else(|| OsStr::new("app")).to_string_lossy().to_string();
+      let mut shortcut_name = name.unwrap_or(default_name);
+      if !shortcut_name.to_ascii_lowercase().ends_with(".lnk") {
+        shortcut_name.push_str(".lnk");
+      }
+      let lnk_path = desktop.join(shortcut_name);
+
+      // ShellLink 作成
+      let sl: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER).map_err(|e| e.to_string())?;
+      sl.SetPath(&to_wide(exe.as_os_str()))
+        .ok()
+        .map_err(|e| format!("SetPath: {:?}", e))?;
+      sl.SetWorkingDirectory(&to_wide(OsStr::new(exe_dir.as_os_str())))
+        .ok()
+        .map_err(|e| format!("SetWorkingDirectory: {:?}", e))?;
+      if let Some(desc) = description.as_ref() {
+        sl.SetDescription(&to_wide(OsStr::new(desc)))
+          .ok()
+          .map_err(|e| format!("SetDescription: {:?}", e))?;
+      }
+      // アイコンはexeを使用
+      sl.SetIconLocation(&to_wide(exe.as_os_str()), 0)
+        .ok()
+        .map_err(|e| format!("SetIconLocation: {:?}", e))?;
+
+      let pf: IPersistFile = sl.cast().map_err(|e| e.to_string())?;
+      let lnk_w = to_wide(lnk_path.as_os_str());
+      pf.Save(&lnk_w, true).ok().map_err(|e| format!("Save: {:?}", e))?;
+
+      CoUninitialize();
+      Ok(())
+    }
+  }
+
+  #[cfg(not(target_os = "windows"))]
+  {
+    let _ = name;
+    let _ = description;
+    Err("unsupported platform".into())
+  }
 }
