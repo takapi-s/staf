@@ -45,38 +45,32 @@ async fn recreate_windows_shortcut(name: Option<String>, description: Option<Str
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use std::path::{Path, PathBuf};
-    use windows::core::{GUID, HRESULT};
-    use windows::Win32::Foundation::PWSTR;
+    use windows::core::{Interface, PCWSTR, PWSTR};
     use windows::Win32::System::Com::{CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED};
-    use windows::Win32::System::Com::StructuredStorage::IPersistFile;
-    use windows::Win32::UI::Shell::{IShellLinkW, KnownFolders::FOLDERID_Desktop, ShellLink, SHGetKnownFolderPath};
+    use windows::Win32::System::Com::IPersistFile;
+    use windows::Win32::UI::Shell::{IShellLinkW, FOLDERID_Desktop, KNOWN_FOLDER_FLAG, ShellLink, SHGetKnownFolderPath};
 
-    unsafe fn to_wide(s: &OsStr) -> Vec<u16> {
+    fn to_wide(s: &OsStr) -> Vec<u16> {
       s.encode_wide().chain(std::iter::once(0)).collect()
     }
 
     unsafe {
-      // COM初期化
       let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
 
       // デスクトップパス取得
-      let mut raw_path: PWSTR = PWSTR::null();
-      let hr: HRESULT = SHGetKnownFolderPath(&FOLDERID_Desktop, 0, None, &mut raw_path);
-      if hr.is_err() {
-        CoUninitialize();
-        return Err(format!("failed to get Desktop path: 0x{:x}", hr.0));
-      }
-      let desktop = if raw_path.is_null() {
+      let raw_path: PWSTR = SHGetKnownFolderPath(&FOLDERID_Desktop, KNOWN_FOLDER_FLAG(0), None)
+        .map_err(|e| e.to_string())?;
+      if raw_path.is_null() {
         CoUninitialize();
         return Err("Desktop path not found".into());
-      } else {
+      }
+      let desktop: PathBuf = {
         let mut len = 0usize;
         while *raw_path.0.add(len) != 0 { len += 1; }
         let slice = std::slice::from_raw_parts(raw_path.0, len);
         let s = String::from_utf16_lossy(slice);
-        let p = PathBuf::from(s);
         CoTaskMemFree(Some(raw_path.0 as _));
-        p
+        PathBuf::from(s)
       };
 
       // 実行ファイル
@@ -91,25 +85,21 @@ async fn recreate_windows_shortcut(name: Option<String>, description: Option<Str
 
       // ShellLink 作成
       let sl: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER).map_err(|e| e.to_string())?;
-      sl.SetPath(&to_wide(exe.as_os_str()))
-        .ok()
-        .map_err(|e| format!("SetPath: {:?}", e))?;
-      sl.SetWorkingDirectory(&to_wide(OsStr::new(exe_dir.as_os_str())))
-        .ok()
-        .map_err(|e| format!("SetWorkingDirectory: {:?}", e))?;
+      let exe_w = to_wide(exe.as_os_str());
+      sl.SetPath(PCWSTR(exe_w.as_ptr())).map_err(|e| format!("SetPath: {:?}", e))?;
+      let dir_w = to_wide(exe_dir.as_os_str());
+      sl.SetWorkingDirectory(PCWSTR(dir_w.as_ptr())).map_err(|e| format!("SetWorkingDirectory: {:?}", e))?;
       if let Some(desc) = description.as_ref() {
-        sl.SetDescription(&to_wide(OsStr::new(desc)))
-          .ok()
-          .map_err(|e| format!("SetDescription: {:?}", e))?;
+        let desc_w = to_wide(OsStr::new(desc));
+        sl.SetDescription(PCWSTR(desc_w.as_ptr())).map_err(|e| format!("SetDescription: {:?}", e))?;
       }
       // アイコンはexeを使用
-      sl.SetIconLocation(&to_wide(exe.as_os_str()), 0)
-        .ok()
-        .map_err(|e| format!("SetIconLocation: {:?}", e))?;
+      let icon_w = to_wide(exe.as_os_str());
+      sl.SetIconLocation(PCWSTR(icon_w.as_ptr()), 0).map_err(|e| format!("SetIconLocation: {:?}", e))?;
 
       let pf: IPersistFile = sl.cast().map_err(|e| e.to_string())?;
       let lnk_w = to_wide(lnk_path.as_os_str());
-      pf.Save(&lnk_w, true).ok().map_err(|e| format!("Save: {:?}", e))?;
+      pf.Save(PCWSTR(lnk_w.as_ptr()), true).map_err(|e| format!("Save: {:?}", e))?;
 
       CoUninitialize();
       Ok(())
