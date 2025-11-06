@@ -4,7 +4,7 @@
 [![Release](https://github.com/takapi-s/staf/actions/workflows/release.yml/badge.svg)](https://github.com/takapi-s/staf/actions/workflows/release.yml)
 
 <p align="center">
-  <img src="src-tauri/icons/app-icon.png" alt="STAF App Icon" width="200">
+  <img src="src-tauri/icons/staf.svg" alt="STAF App Icon" width="200">
 </p>
 
 An AI-assisted, structured flow to transform CSV data reliably at scale.
