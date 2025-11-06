@@ -16,6 +16,7 @@ const defaultConfig: AppConfig = {
   timeout: 60,
   outputFolder: '',
   logLevel: 'info',
+  enableWebSearch: true,
 };
 
 export const useConfigStore = create<ConfigState>()(

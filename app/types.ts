@@ -30,6 +30,7 @@ export interface AppConfig {
   timeout: number;
   outputFolder: string;
   logLevel: 'error' | 'warn' | 'info' | 'debug';
+  enableWebSearch: boolean;
 }
 
 // 出力カラム設定

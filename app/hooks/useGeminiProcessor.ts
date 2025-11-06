@@ -45,6 +45,13 @@ export function useGeminiProcessor() {
       throw error;
     }
 
+    if (outputColumns.length === 0) {
+      const error = new Error('Output columns are not configured');
+      logger.error('Start error', error);
+      toast.error('Please configure output columns');
+      throw error;
+    }
+
     // ログレベル設定
     logger.setLogLevel(config.logLevel);
 
@@ -143,6 +150,7 @@ export function useGeminiProcessor() {
           rate_limit_rpm: config.rateLimit,
           timeout_secs: config.timeout,
           prompt_template: promptTemplate,
+          enable_web_search: config.enableWebSearch,
         },
       } as any);
 

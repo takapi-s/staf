@@ -16,6 +16,12 @@ pub struct ProcessConfig {
   pub rate_limit_rpm: u32,
   pub timeout_secs: u64,
   pub prompt_template: String,
+  #[serde(default = "default_enable_web_search")]
+  pub enable_web_search: bool,
+}
+
+fn default_enable_web_search() -> bool {
+  true
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -39,6 +45,7 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
   let mut set = JoinSet::new();
   let app_clone = app.clone();
   let prompt_template = config.prompt_template.clone();
+  let enable_web_search = config.enable_web_search;
 
   let success_count = Arc::new(AtomicU32::new(0));
   let error_count = Arc::new(AtomicU32::new(0));
@@ -87,7 +94,7 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
       let current_active = active_requests.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
       let _ = app.emit("processing:active_requests", ActiveRequestsEvent { count: current_active });
       
-      let res = client.generate_with_search(&prompt).await;
+      let res = client.generate_with_search(&prompt, enable_web_search).await;
 
       match res {
         Ok(resp) => {

@@ -74,7 +74,7 @@ export function PromptEditor({ onTemplateChange }: PromptEditorProps) {
     toast.info(promptLang === 'ja' ? 'プロンプトを生成しています…' : 'Generating prompt...');
 
     try {
-      const geminiClient = new GeminiClient(config.apiKey);
+      const geminiClient = new GeminiClient(config.apiKey, config.enableWebSearch);
 
       // Get first-row sample
       const firstRow = csvHeaders.reduce((acc, header) => {

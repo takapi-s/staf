@@ -24,14 +24,18 @@ impl GeminiClientRust {
     Ok(Self { http, api_key })
   }
 
-  pub async fn generate_with_search(&self, prompt: &str) -> Result<GenerateResponse> {
+  pub async fn generate_with_search(&self, prompt: &str, enable_web_search: bool) -> Result<GenerateResponse> {
     let url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     let body = GenerateRequest {
       contents: vec![Content {
         parts: vec![Part { text: prompt.to_string() }],
       }],
-      tools: vec![Tool { google_search: GoogleSearch {} }],
+      tools: if enable_web_search {
+        vec![Tool { google_search: GoogleSearch {} }]
+      } else {
+        vec![]
+      },
     };
 
     // リトライ 5 回、指数バックオフ（送信エラーも含む）
@@ -100,9 +104,9 @@ impl GeminiClientRust {
 }
 
 // Tauriコマンド用の薄いヘルパー
-pub async fn generate_with_search_once(api_key: String, prompt: String, timeout_secs: u64) -> Result<GenerateResponse> {
+pub async fn generate_with_search_once(api_key: String, prompt: String, timeout_secs: u64, enable_web_search: bool) -> Result<GenerateResponse> {
   let client = GeminiClientRust::new(api_key, timeout_secs)?;
-  client.generate_with_search(&prompt).await
+  client.generate_with_search(&prompt, enable_web_search).await
 }
 
 #[derive(Debug, Serialize)]

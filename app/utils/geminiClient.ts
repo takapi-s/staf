@@ -3,9 +3,11 @@ import { invoke } from '@tauri-apps/api/core';
 
 export class GeminiClient {
   private apiKey: string;
+  private enableWebSearch: boolean;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, enableWebSearch: boolean = true) {
     this.apiKey = apiKey;
+    this.enableWebSearch = enableWebSearch;
   }
 
   // プロンプト生成用（grounded searchなし、JSON以外）
@@ -20,6 +22,7 @@ export class GeminiClient {
     const call = invoke<{ text: string }>('gemini_generate_with_search', {
       apiKey: this.apiKey,
       prompt,
+      enableWebSearch: this.enableWebSearch,
     });
 
     const result = await Promise.race([call, timeoutPromise]) as { text: string };
@@ -38,6 +41,7 @@ export class GeminiClient {
     const call = invoke<GeminiResponse>('gemini_generate_with_search', {
       apiKey: this.apiKey,
       prompt,
+      enableWebSearch: this.enableWebSearch,
     });
 
     const result = await Promise.race([call, timeoutPromise]) as GeminiResponse;

@@ -33,6 +33,7 @@ export function SettingsDialog() {
       timeout: 30,
       outputFolder: '',
       logLevel: 'info',
+      enableWebSearch: true,
     });
     setValidationErrors([]);
   };

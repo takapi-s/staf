@@ -5,6 +5,8 @@ import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 import { Play, Square, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -19,19 +21,21 @@ export function ProcessControl() {
   const { 
     csvData, 
     promptTemplate, 
+    outputColumns,
     progress, 
     activeRequests,
     results, 
     errors 
   } = useAppStore();
   
-  const { config } = useConfigStore();
+  const { config, updateConfig } = useConfigStore();
   const [lastError, setLastError] = useState<string | null>(null);
 
   const canStart = 
     csvData.length > 0 && 
     promptTemplate.trim() && 
     config.apiKey.trim() && 
+    outputColumns.length > 0 &&
     !isProcessing;
 
   // Keyboard shortcuts
@@ -160,6 +164,26 @@ export function ProcessControl() {
           </div>
         )}
 
+        {/* Web Search Toggle */}
+        {!isProcessing && (
+          <div className="flex items-center justify-between space-x-2 p-3 bg-muted/50 rounded-md">
+            <div className="space-y-0.5 flex-1">
+              <Label htmlFor="process-web-search" className="text-sm font-medium cursor-pointer">
+                Web Search (Google Search Grounding)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Enable web search tool for Gemini API
+              </p>
+            </div>
+            <Switch
+              id="process-web-search"
+              checked={config.enableWebSearch}
+              onCheckedChange={(checked) => updateConfig({ enableWebSearch: checked })}
+              disabled={isProcessing}
+            />
+          </div>
+        )}
+
         {/* Controls */}
         <div className="flex space-x-2">
           {!isProcessing ? (
@@ -189,6 +213,7 @@ export function ProcessControl() {
         <div className="text-xs text-muted-foreground space-y-1">
           <p>Concurrency: {config.concurrency} | Rate limit: {config.rateLimit} RPM</p>
           <p>Timeout: {config.timeout}s | Log level: {config.logLevel}</p>
+          <p>Web Search: {config.enableWebSearch ? 'Enabled' : 'Disabled'}</p>
         </div>
 
         {/* Pre-run checklist */}
@@ -219,6 +244,14 @@ export function ProcessControl() {
                   config.apiKey.trim() ? 'bg-green-600' : 'bg-red-600'
                 }`} />
                 <span>API key set</span>
+              </div>
+              <div className={`flex items-center space-x-2 ${
+                outputColumns.length > 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  outputColumns.length > 0 ? 'bg-green-600' : 'bg-red-600'
+                }`} />
+                <span>Output columns ({outputColumns.length} configured)</span>
               </div>
             </div>
           </div>
