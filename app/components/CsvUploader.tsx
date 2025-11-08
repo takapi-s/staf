@@ -36,9 +36,19 @@ export function CsvUploader({ onFileLoaded }: CsvUploaderProps) {
           }
 
           const data = results.data as Record<string, any>[];
-          const headers = Object.keys(data[0] || {});
+          // 各フィールドの値をトリム（先頭・末尾のスペースを削除）
+          const trimmedData = data.map(row => {
+            const trimmedRow: Record<string, any> = {};
+            Object.keys(row).forEach(key => {
+              const value = row[key];
+              // 文字列の場合のみトリム、それ以外はそのまま
+              trimmedRow[key] = typeof value === 'string' ? value.trim() : value;
+            });
+            return trimmedRow;
+          });
+          const headers = Object.keys(trimmedData[0] || {});
           
-          setCsvData(data, headers);
+          setCsvData(trimmedData, headers);
           onFileLoaded?.();
         },
         error: (error: any) => {

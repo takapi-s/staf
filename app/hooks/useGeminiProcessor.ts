@@ -132,6 +132,54 @@ export function useGeminiProcessor() {
 
       unsubscribesRef.current = unsubs;
 
+      // スキーマ生成（構造化出力は常時ON）
+      const buildSchema = () => {
+        const buildLeafSchema = (t?: string) => {
+          switch (t) {
+            case 'number':
+              return { type: 'number' };
+            case 'boolean':
+              return { type: 'boolean' };
+            case 'string':
+            default:
+              return { type: 'string' };
+          }
+        };
+
+        const buildObjectProperties = (nested?: Array<{ name: string; type?: any }>) => {
+          const props: Record<string, any> = {};
+          const req: string[] = [];
+          for (const n of nested || []) {
+            // 配列の中身（items）は未指定だとエラーになるため必ず定義
+            if (n.type === 'array') {
+              // 配列要素のスキーマは、ネスト定義がある場合はオブジェクト、なければ文字列にフォールバック
+              const itemProps = buildObjectProperties((n as any).nestedColumns);
+              const itemsSchema = (n as any).nestedColumns && (n as any).nestedColumns.length > 0
+                ? { type: 'object', properties: itemProps.properties, required: itemProps.required }
+                : { type: 'string' };
+              props[n.name] = { type: 'array', items: itemsSchema };
+            } else if (n.type === 'object') {
+              const inner = buildObjectProperties((n as any).nestedColumns);
+              props[n.name] = { type: 'object', properties: inner.properties, required: inner.required };
+            } else {
+              props[n.name] = buildLeafSchema(n.type);
+            }
+            req.push(n.name);
+          }
+          return { properties: props, required: req };
+        };
+
+        // トップレベルを `outputColumns` そのままのオブジェクトとして返す（eventsを特別扱いしない）
+        const top = buildObjectProperties(outputColumns as any);
+        return {
+          type: 'object',
+          properties: top.properties,
+          required: top.required,
+        };
+      };
+
+      const responseSchema = buildSchema();
+
       // バックエンド起動
       logger.debug('Dispatching backend command process_rows', {
         totalRows: csvData.length,
@@ -139,6 +187,7 @@ export function useGeminiProcessor() {
           concurrency: config.concurrency,
           rate_limit_rpm: config.rateLimit,
           timeout_secs: config.timeout,
+          structured_output_enabled: true,
         }
       });
 
@@ -151,6 +200,7 @@ export function useGeminiProcessor() {
           timeout_secs: config.timeout,
           prompt_template: promptTemplate,
           enable_web_search: config.enableWebSearch,
+          response_schema: responseSchema,
         },
       } as any);
 

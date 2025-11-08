@@ -1,143 +1,135 @@
 use anyhow::{anyhow, Result};
-use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use tokio::time::sleep;
+use gemini_rust::{Gemini, Tool};
 
-#[derive(Debug, Clone)]
-pub struct GeminiClientRust {
-  http: Client,
-  api_key: String,
-}
+// ↑ 旧REST実装は削除（gemini-rustへ移行）
 
-impl GeminiClientRust {
-  pub fn new(api_key: String, timeout_secs: u64) -> Result<Self> {
-    let http = Client::builder()
-      // ALPNに任せる（HTTP/2 or HTTP/1.1）。Prior Knowledgeは使わない
-      .pool_max_idle_per_host(10)
-      .pool_idle_timeout(Duration::from_secs(90))
-      .connect_timeout(Duration::from_secs(30)) // 接続タイムアウトを30秒に延長
-      .tcp_keepalive(Duration::from_secs(30))
-      .use_rustls_tls()
-      .timeout(Duration::from_secs(timeout_secs))
-      .build()?;
-    Ok(Self { http, api_key })
-  }
+// （旧RESTヘルパーは削除）
 
-  pub async fn generate_with_search(&self, prompt: &str, enable_web_search: bool) -> Result<GenerateResponse> {
-    let url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+// 旧 GenerateRequest は廃止
 
-    let body = GenerateRequest {
-      contents: vec![Content {
-        parts: vec![Part { text: prompt.to_string() }],
-      }],
-      tools: if enable_web_search {
-        vec![Tool { google_search: GoogleSearch {} }]
-      } else {
-        vec![]
-      },
-    };
-
-    // リトライ 5 回、指数バックオフ（送信エラーも含む）
-    let mut attempt: u32 = 0;
-    loop {
-      let res = match self
-        .http
-        .post(url)
-        .header("x-goog-api-key", &self.api_key)
-        .header("Content-Type", "application/json")
-        .json(&body)
-        .send()
-        .await
-      {
-        Ok(resp) => resp,
-        Err(e) => {
-          if attempt >= 5 {
-            // より詳細なエラー情報を提供
-            let error_msg = if e.is_timeout() {
-              "Connection timeout - check network connection"
-            } else if e.is_connect() {
-              "Connection failed - check firewall/proxy settings"
-            } else if e.is_request() {
-              "Request failed - check API key and permissions"
-            } else {
-              &format!("Network error: {}", e)
-            };
-            return Err(anyhow!(format!("send error (retry exceeded): {}", error_msg)));
-          }
-          let backoff = Duration::from_millis(500 * (1u64 << attempt));
-          sleep(backoff).await;
-          attempt += 1;
-          continue;
-        }
-      };
-
-      match res.status() {
-        StatusCode::OK => {
-          let v: serde_json::Value = res.json().await?;
-          // `text` は SDK が合成してくれるが REST では parts から抽出
-          let text = v
-            .pointer("/candidates/0/content/parts/0/text")
-            .and_then(|x| x.as_str())
-            .unwrap_or("")
-            .to_string();
-          let grounding_metadata = v.pointer("/candidates/0/groundingMetadata").cloned();
-          return Ok(GenerateResponse { text, grounding_metadata });
-        }
-        StatusCode::TOO_MANY_REQUESTS | StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE | StatusCode::GATEWAY_TIMEOUT => {
-          if attempt >= 5 {
-            let text = res.text().await.unwrap_or_default();
-            return Err(anyhow!(format!("retry exceeded: {}", text)));
-          }
-          let backoff = Duration::from_millis(500 * (1u64 << attempt));
-          sleep(backoff).await;
-          attempt += 1;
-          continue;
-        }
-        _ => {
-          let text = res.text().await.unwrap_or_default();
-          return Err(anyhow!(format!("gemini error: {}", text)));
-        }
-      }
-    }
-  }
-}
-
-// Tauriコマンド用の薄いヘルパー
-pub async fn generate_with_search_once(api_key: String, prompt: String, timeout_secs: u64, enable_web_search: bool) -> Result<GenerateResponse> {
-  let client = GeminiClientRust::new(api_key, timeout_secs)?;
-  client.generate_with_search(&prompt, enable_web_search).await
-}
-
-#[derive(Debug, Serialize)]
-struct GenerateRequest {
-  contents: Vec<Content>,
-  tools: Vec<Tool>,
-}
-
-#[derive(Debug, Serialize)]
-struct Content {
-  parts: Vec<Part>,
-}
-
-#[derive(Debug, Serialize)]
-struct Part {
-  text: String,
-}
-
-#[derive(Debug, Serialize)]
-struct Tool {
-  #[serde(rename = "google_search")]
-  google_search: GoogleSearch,
-}
-
-#[derive(Debug, Serialize)]
-struct GoogleSearch {}
+// （旧REST向けの構造体類は削除）
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GenerateResponse {
   pub text: String,
   pub grounding_metadata: Option<serde_json::Value>,
+  pub intermediate_notes: Option<String>,
+  pub stage2_input: Option<String>,
+}
+
+// （旧REST用スキーマ関数は不要）
+
+// ==== gemini-rust を使った新実装（Structured Response & Google Search）====
+
+// プロンプト生成（テキストのみ、ツールなし）
+pub async fn generate_prompt_text_once(api_key: String, prompt: String, _timeout_secs: u64) -> Result<GenerateResponse> {
+  let client = Gemini::new(api_key).map_err(|e| anyhow!(e.to_string()))?;
+  println!("[gemini.rs] generate_prompt_text_once: prompt=\n{}", prompt);
+  let resp = client
+    .generate_content()
+    .with_user_message(prompt)
+    .execute()
+    .await
+    .map_err(|e| anyhow!(e.to_string()))?;
+  let text = resp.text().to_string();
+  println!("[gemini.rs] generate_prompt_text_once: response_text(raw)=\n{}", text);
+  Ok(GenerateResponse { text, grounding_metadata: None, intermediate_notes: None, stage2_input: None })
+}
+
+pub async fn generate_events_with_search_once(
+  api_key: String,
+  prompt: String,
+  _timeout_secs: u64,
+  enable_web_search: bool,
+  response_schema: Option<serde_json::Value>,
+) -> Result<GenerateResponse> {
+  let client = Gemini::new(api_key).map_err(|e| anyhow!(e.to_string()))?;
+
+  println!("[gemini.rs] generate_events_with_search_once: enable_web_search={}", enable_web_search);
+  println!("[gemini.rs] generate_events_with_search_once: prompt=\n{}", prompt);
+  match &response_schema {
+    Some(schema) => {
+      match serde_json::to_string_pretty(schema) {
+        Ok(pretty) => println!("[gemini.rs] response_schema(JSON pretty)=\n{}", pretty),
+        Err(_) => println!("[gemini.rs] response_schema: <failed to pretty-print>"),
+      }
+    }
+    None => println!("[gemini.rs] response_schema=None"),
+  }
+
+  if enable_web_search {
+    // 1) 検索・収集フェーズ（ツール使用／MIME・スキーマ未指定）
+    let search_prompt = format!(
+      "{}\n\n上の指示に従い、信頼できる情報源を優先して事実を収集してください。結果は箇条書きのメモとして簡潔に出力してください。",
+      prompt
+    );
+    let notes_resp = client
+      .generate_content()
+      .with_system_prompt("与えられたタスクの要件に従い、Google検索ツールで根拠を収集し、確認できた事実のみを箇条書きで要約してください。URLや出典名を含めても構いません。")
+      .with_user_message(search_prompt)
+      .with_tool(Tool::google_search())
+      .execute()
+      .await
+      .map_err(|e| anyhow!(e.to_string()))?;
+    let notes_text = notes_resp.text().to_string();
+    println!("[gemini.rs] stage1(search/collect) notes(raw)=\n{}", notes_text);
+
+    // 2) 構造化フェーズ（ツール未使用／MIME・スキーマ指定）
+    let mut struct_builder = client
+      .generate_content()
+      .with_system_prompt("与えられたメモの内容だけに基づき、指定されたスキーマに厳密に従うJSONを返してください。未知や不確実な値はnullを使用してください。")
+      .with_user_message({
+        let s = format!(
+          "以下のメモを、指定のスキーマに従ってJSONへ構造化してください。\n\n--- メモ ---\n{}\n----------------\n",
+          notes_text
+        );
+        s
+      })
+      .with_response_mime_type("application/json");
+    if let Some(schema) = response_schema {
+      struct_builder = struct_builder.with_response_schema(schema);
+    }
+    let struct_resp = struct_builder
+      .execute()
+      .await
+      .map_err(|e| anyhow!(e.to_string()))?;
+    let text = struct_resp.text().to_string();
+    println!("[gemini.rs] stage2(structure) response_text(raw)=\n{}", text);
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+      if let Ok(pretty) = serde_json::to_string_pretty(&json) {
+        println!("[gemini.rs] stage2(structure) response_text(JSON pretty)=\n{}", pretty);
+      }
+    }
+    Ok(GenerateResponse {
+      text,
+      grounding_metadata: None,
+      intermediate_notes: Some(notes_text),
+      stage2_input: Some("以下のメモを、指定のスキーマに従ってJSONへ構造化してください。--- メモ --- ...".to_string()),
+    })
+  } else {
+    // 検索なし：単発で構造化出力（ツール未使用／MIME・スキーマ指定）
+    let mut builder = client
+      .generate_content()
+      .with_system_prompt("指定されたスキーマに厳密に従い、JSONのみを返してください。未知や不確実な値はnullを使用してください。")
+      .with_user_message(prompt)
+      .with_response_mime_type("application/json");
+    if let Some(schema) = response_schema {
+      builder = builder.with_response_schema(schema);
+    }
+    let resp = builder
+      .execute()
+      .await
+      .map_err(|e| anyhow!(e.to_string()))?;
+    let text = resp.text().to_string();
+    println!("[gemini.rs] single(structure) response_text(raw)=\n{}", text);
+    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+      if let Ok(pretty) = serde_json::to_string_pretty(&json) {
+        println!("[gemini.rs] single(structure) response_text(JSON pretty)=\n{}", pretty);
+      }
+    }
+    Ok(GenerateResponse { text, grounding_metadata: None, intermediate_notes: None, stage2_input: None })
+  }
 }
 
 

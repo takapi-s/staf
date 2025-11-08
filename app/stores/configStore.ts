@@ -17,6 +17,7 @@ const defaultConfig: AppConfig = {
   outputFolder: '',
   logLevel: 'info',
   enableWebSearch: true,
+  structuredOutputEnabled: true,
 };
 
 export const useConfigStore = create<ConfigState>()(

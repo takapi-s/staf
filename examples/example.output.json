@@ -1,0 +1,11 @@
+{
+    "events": [
+        {
+            "title": "string",
+            "date": "string",
+            "ticket_price": "number",
+            "venue": "string"
+        }
+    ],
+    "Birthplace": "string"
+}

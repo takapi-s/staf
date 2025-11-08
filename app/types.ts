@@ -31,6 +31,7 @@ export interface AppConfig {
   outputFolder: string;
   logLevel: 'error' | 'warn' | 'info' | 'debug';
   enableWebSearch: boolean;
+  structuredOutputEnabled?: boolean;
 }
 
 // 出力カラム設定

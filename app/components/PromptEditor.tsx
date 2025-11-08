@@ -74,7 +74,8 @@ export function PromptEditor({ onTemplateChange }: PromptEditorProps) {
     toast.info(promptLang === 'ja' ? 'プロンプトを生成しています…' : 'Generating prompt...');
 
     try {
-      const geminiClient = new GeminiClient(config.apiKey, config.enableWebSearch);
+      // Prompt生成時は構造化出力とツールの同時使用が非対応のため、Web検索は無効化
+      const geminiClient = new GeminiClient(config.apiKey, false);
 
       // Get first-row sample
       const firstRow = csvHeaders.reduce((acc, header) => {
