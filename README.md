@@ -7,15 +7,15 @@
   <img src="src-tauri/icons/staf.svg" alt="STAF App Icon" width="200">
 </p>
 
-An AI-assisted, structured flow to transform CSV data reliably at scale.
+AI‑powered CSV data enrichment — with optional web‑grounded evidence.
 
 ## Features
 
-- 🚀 **High Performance**: Efficiently process large CSV files
-- 🤖 **AI-Powered**: Advanced data transformation and analysis using Google Gemini AI
-- 📊 **Structured Outputs**: Explicit columns and schema-first configuration
-- 📝 **Template Management**: Save frequently used settings as templates
-- 💾 **Easy Export**: Export processed results in CSV format
+- ✅ **Trusted enrichment**: Schema‑first, strict JSON keeps your data clean
+- 🔎 **Evidence‑ready**: Optional web search grounding with transparent logs
+- ⚡ **Scale with control**: Concurrency, rate limits, resilient timeouts
+- ♻️ **Repeatable workflows**: Save prompts, outputs, and settings as templates
+- 📤 **Easy handoff**: Export enriched results (incl. successes/failures) to CSV
 - 🎨 **Modern UI**: Beautiful interface built with TailwindCSS
 
 ## Requirements
