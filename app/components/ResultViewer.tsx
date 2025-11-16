@@ -115,16 +115,24 @@ export function ResultViewer() {
 
   const getResultColumns = () => {
     if (expandedResults.length === 0) return [];
-    
-    const firstResult = expandedResults[0];
-    return Object.keys(firstResult).filter(key => !key.startsWith('_'));
+    const union = new Set<string>();
+    expandedResults.forEach(row => {
+      Object.keys(row).forEach(key => {
+        if (!key.startsWith('_')) union.add(key);
+      });
+    });
+    return Array.from(union);
   };
 
   const getErrorColumns = () => {
     if (errors.length === 0) return [];
-    
-    const firstError = errors[0];
-    return Object.keys(firstError).filter(key => !key.startsWith('_'));
+    const union = new Set<string>();
+    errors.forEach(err => {
+      Object.keys(err).forEach(key => {
+        if (!key.startsWith('_')) union.add(key);
+      });
+    });
+    return Array.from(union);
   };
 
   const resultColumns = getResultColumns();

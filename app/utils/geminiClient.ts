@@ -19,10 +19,10 @@ export class GeminiClient {
       }, timeout);
     });
 
-    const call = invoke<{ text: string }>('gemini_generate_with_search', {
+    // プロンプト生成はツール無し・テキストのみ
+    const call = invoke<{ text: string }>('gemini_generate_prompt_text', {
       apiKey: this.apiKey,
       prompt,
-      enableWebSearch: this.enableWebSearch,
     });
 
     const result = await Promise.race([call, timeoutPromise]) as { text: string };
@@ -42,6 +42,7 @@ export class GeminiClient {
       apiKey: this.apiKey,
       prompt,
       enableWebSearch: this.enableWebSearch,
+      responseSchema: null,
     });
 
     const result = await Promise.race([call, timeoutPromise]) as GeminiResponse;

@@ -1,4 +1,4 @@
-use crate::gemini::GeminiClientRust;
+use crate::gemini;
 use anyhow::Result;
 use governor::{Quota, RateLimiter};
 use serde::{Deserialize, Serialize};
@@ -8,6 +8,9 @@ use tokio::{sync::Semaphore, task::JoinSet};
 use tokio_util::sync::CancellationToken;
 use std::sync::atomic::AtomicU32;
 use once_cell::sync::OnceCell;
+use std::path::PathBuf;
+use tokio::io::AsyncWriteExt;
+use tokio::fs::OpenOptions;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ProcessConfig {
@@ -18,6 +21,8 @@ pub struct ProcessConfig {
   pub prompt_template: String,
   #[serde(default = "default_enable_web_search")]
   pub enable_web_search: bool,
+  #[serde(default)]
+  pub response_schema: Option<serde_json::Value>,
 }
 
 fn default_enable_web_search() -> bool {
@@ -36,16 +41,44 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
     Quota::per_minute(NonZeroU32::new(config.rate_limit_rpm.max(1)).unwrap()),
   ));
   let semaphore = Arc::new(Semaphore::new(config.concurrency.max(1)));
-  let client = Arc::new(
-    GeminiClientRust::new(config.api_key.clone(), config.timeout_secs)
-      .map_err(|e| e.to_string())?,
-  );
 
   let total = rows.len() as u32;
   let mut set = JoinSet::new();
   let app_clone = app.clone();
   let prompt_template = config.prompt_template.clone();
   let enable_web_search = config.enable_web_search;
+  let response_schema = config.response_schema.clone();
+
+  // --- Run ID と ログファイルパスの準備 ---
+  let run_id = {
+    // エポックミリ秒 + 下位4桁の16進を付与した簡易ID（外部クレート不使用）
+    let now = std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .unwrap_or_default();
+    let millis = now.as_millis();
+    let suffix = (millis as u64) & 0xFFFF;
+    format!("{}-{:04x}", millis, suffix)
+  };
+
+  // AppData 配下に logs ディレクトリを用意（例: %AppData%/staf/logs）
+  let logs_path: PathBuf = {
+    // tauri 2 のパスリゾルバ（取れない場合は temp_dir ）
+    let base = app
+      .path()
+      .app_data_dir()
+      .unwrap_or(std::env::temp_dir())
+      .join("staf")
+      .join("logs");
+    if let Err(e) = tokio::fs::create_dir_all(&base).await {
+      let _ = app.emit("processing:debug", format!("log dir create error: {}", e));
+    }
+    base
+  };
+
+  let log_file_path = logs_path.join(format!("run-{}.jsonl", run_id));
+
+  // ログ追記用の簡易ロック
+  let log_lock = Arc::new(tokio::sync::Mutex::new(()));
 
   let success_count = Arc::new(AtomicU32::new(0));
   let error_count = Arc::new(AtomicU32::new(0));
@@ -55,7 +88,8 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
   for (idx, row) in rows.into_iter().enumerate() {
     let sem = semaphore.clone();
     let limiter = limiter.clone();
-    let client = client.clone();
+    let api_key = config.api_key.clone();
+    let timeout_secs = config.timeout_secs;
     let app = app_clone.clone();
     let cancel = cancel.clone();
     let success_count = success_count.clone();
@@ -63,6 +97,11 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
     let progress = progress.clone();
     let active_requests = active_requests.clone();
     let prompt_template = prompt_template.clone();
+    let log_file_path = log_file_path.clone();
+    let log_lock = log_lock.clone();
+    let run_id = run_id.clone();
+    let enable_web_search = enable_web_search;
+    let response_schema = response_schema.clone();
 
     set.spawn(async move {
       // デバッグ: タスク開始
@@ -93,20 +132,123 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
       let _ = app.emit("processing:debug", format!("row {}: sending request", idx));
       let current_active = active_requests.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
       let _ = app.emit("processing:active_requests", ActiveRequestsEvent { count: current_active });
+      let started = std::time::Instant::now();
+
+      // 送信前ログ（request）: Structured Response + optional google_search
+      let schema_len = response_schema.as_ref().map(|s| s.to_string().len()).unwrap_or(0);
+      let request_body = serde_json::json!({
+        "structuredResponse": true,
+        "tools": if enable_web_search { serde_json::json!([{ "google_search": {} }]) } else { serde_json::json!([]) },
+        "hasResponseSchema": response_schema.is_some(),
+        "responseSchemaLength": schema_len,
+        "prompt": prompt,
+      });
+
+      let request_record = serde_json::json!({
+        "type": "request",
+        "runId": run_id,
+        "rowIndex": idx as u32,
+        "timestampMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),
+        "prompt": prompt,
+        "requestBody": request_body,
+        "inputRow": serde_json::Value::Object(row.0.clone()),
+      });
+      if let Err(e) = append_jsonl(&log_file_path, &log_lock, request_record).await {
+        let _ = app.emit("processing:debug", format!("row {}: request log error -> {}", idx, e));
+      }
       
-      let res = client.generate_with_search(&prompt, enable_web_search).await;
+      let res = gemini::generate_events_with_search_once(
+        api_key,
+        prompt.clone(),
+        timeout_secs,
+        enable_web_search,
+        response_schema,
+      ).await;
 
       match res {
         Ok(resp) => {
-          let _ = app.emit("processing:debug", format!("row {}: response received (text_len={})", idx, resp.text.len()));
-          success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-          let _ = app.emit("processing:row", RowEvent {
-            index: idx as u32,
-            status: "success".into(),
-            data: Some(parse_response_text(&resp.text)),
-            raw: Some(resp.text),
-            error: None,
-          });
+          // 中間ノート・構造化入力のログを（存在する場合）先に保存
+          if let Some(notes) = resp.intermediate_notes.as_ref() {
+            let intermediate_record = serde_json::json!({
+              "type": "intermediate",
+              "runId": run_id,
+              "rowIndex": idx as u32,
+              "timestampMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),
+              "notes": notes,
+            });
+            if let Err(e) = append_jsonl(&log_file_path, &log_lock, intermediate_record).await {
+              let _ = app.emit("processing:debug", format!("row {}: intermediate log error -> {}", idx, e));
+            }
+          }
+          if let Some(s2in) = resp.stage2_input.as_ref() {
+            let stage2_input_record = serde_json::json!({
+              "type": "stage2_input",
+              "runId": run_id,
+              "rowIndex": idx as u32,
+              "timestampMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),
+              "text": s2in,
+            });
+            if let Err(e) = append_jsonl(&log_file_path, &log_lock, stage2_input_record).await {
+              let _ = app.emit("processing:debug", format!("row {}: stage2_input log error -> {}", idx, e));
+            }
+          }
+
+          let resp_text = resp.text;
+          let _ = app.emit("processing:debug", format!("row {}: response received (text_len={})", idx, resp_text.len()));
+
+          match parse_response_text(&resp_text) {
+            Ok(parsed) => {
+              success_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+              let _ = app.emit("processing:row", RowEvent {
+                index: idx as u32,
+                status: "success".into(),
+                data: Some(parsed.clone()),
+                raw: Some(resp_text.clone()),
+                error: None,
+              });
+
+              // 応答ログ（success）
+              let duration_ms = started.elapsed().as_millis() as u64;
+          let response_record = serde_json::json!({
+                "type": "response",
+                "runId": run_id,
+                "rowIndex": idx as u32,
+                "timestampMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),
+                "status": "success",
+                "durationMs": duration_ms,
+                "responseText": resp_text,
+              });
+              if let Err(e) = append_jsonl(&log_file_path, &log_lock, response_record).await {
+                let _ = app.emit("processing:debug", format!("row {}: response log error -> {}", idx, e));
+              }
+            }
+            Err(parse_err) => {
+              error_count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+              let _ = app.emit("processing:row", RowEvent {
+                index: idx as u32,
+                status: "error".into(),
+                data: None,
+                raw: Some(resp_text.clone()),
+                error: Some(parse_err.clone()),
+              });
+
+              // 応答ログ（error: JSON未検出）
+              let duration_ms = started.elapsed().as_millis() as u64;
+              let response_record = serde_json::json!({
+                "type": "response",
+                "runId": run_id,
+                "rowIndex": idx as u32,
+                "timestampMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),
+                "status": "error",
+                "durationMs": duration_ms,
+                "error": parse_err,
+                "responseText": resp_text,
+              });
+              if let Err(e) = append_jsonl(&log_file_path, &log_lock, response_record).await {
+                let _ = app.emit("processing:debug", format!("row {}: response log error -> {}", idx, e));
+              }
+            }
+          }
         }
         Err(err) => {
           let _ = app.emit("processing:debug", format!("row {}: request error -> {}", idx, err));
@@ -118,6 +260,21 @@ pub async fn process_rows(app: AppHandle, rows: Vec<Row>, config: ProcessConfig)
             raw: None,
             error: Some(err.to_string()),
           });
+
+          // 応答ログ（error）
+          let duration_ms = started.elapsed().as_millis() as u64;
+          let response_record = serde_json::json!({
+            "type": "response",
+            "runId": run_id,
+            "rowIndex": idx as u32,
+            "timestampMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis(),
+            "status": "error",
+            "durationMs": duration_ms,
+            "error": err.to_string(),
+          });
+          if let Err(e) = append_jsonl(&log_file_path, &log_lock, response_record).await {
+            let _ = app.emit("processing:debug", format!("row {}: response log error -> {}", idx, e));
+          }
         }
       }
 
@@ -193,65 +350,30 @@ fn value_to_string(v: &serde_json::Value) -> String {
   }
 }
 
-fn parse_response_text(text: &str) -> serde_json::Value {
-  let trimmed = text.trim();
+fn parse_response_text(text: &str) -> Result<serde_json::Value, String> {
+  serde_json::from_str::<serde_json::Value>(text.trim())
+    .map_err(|_| "JSON not found in Gemini response".to_string())
+}
 
-  // 1) コードブロック内のJSON（オブジェクト）
-  if let Some(caps) = regex::Regex::new(r"```(?:json)?\s*(\{[\s\S]*\})\s*```")
-    .ok()
-    .and_then(|re| re.captures(trimmed))
-  {
-    if let Some(m) = caps.get(1) {
-      if let Ok(v) = serde_json::from_str::<serde_json::Value>(m.as_str()) {
-        return v;
-      }
-    }
-  }
+// JSON Lines へ1レコード追記（排他制御込み）
+async fn append_jsonl(path: &PathBuf, lock: &tokio::sync::Mutex<()>, value: serde_json::Value) -> Result<(), String> {
+  let _g = lock.lock().await;
+  let mut file = OpenOptions::new()
+    .create(true)
+    .append(true)
+    .open(path)
+    .await
+    .map_err(|e| e.to_string())?;
 
-  // 2) コードブロック内のJSON（配列）
-  if let Some(caps) = regex::Regex::new(r"```(?:json)?\s*(\[[\s\S]*\])\s*```")
-    .ok()
-    .and_then(|re| re.captures(trimmed))
-  {
-    if let Some(m) = caps.get(1) {
-      if let Ok(v) = serde_json::from_str::<serde_json::Value>(m.as_str()) {
-        return v;
-      }
-    }
-  }
-
-  // 3) 全文がJSONとして妥当
-  if let Ok(v) = serde_json::from_str::<serde_json::Value>(trimmed) {
-    return v;
-  }
-
-  // 4) フリーテキスト混在: 最初のオブジェクト/配列のJSONを切り出してパース
-  fn try_parse_between(text: &str, start: char, end: char) -> Option<serde_json::Value> {
-    let start_pos = text.find(start)?;
-    // end 文字の出現位置をすべて集め、後方から順に試す
-    let mut end_positions: Vec<usize> = text.match_indices(end).map(|(i, _)| i).collect();
-    end_positions.sort_unstable();
-    while let Some(pos) = end_positions.pop() {
-      if pos <= start_pos { continue; }
-      if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text[start_pos..=pos]) {
-        return Some(v);
-      }
-    }
-    None
-  }
-
-  if let Some(v) = try_parse_between(trimmed, '{', '}') {
-    return v;
-  }
-  if let Some(v) = try_parse_between(trimmed, '[', ']') {
-    return v;
-  }
-
-  // 5) それでもだめなら生テキストを格納
-  serde_json::json!({"result": text})
+  let line = serde_json::to_string(&value).map_err(|e| e.to_string())?;
+  file.write_all(line.as_bytes()).await.map_err(|e| e.to_string())?;
+  file.write_all(b"\n").await.map_err(|e| e.to_string())?;
+  Ok(())
 }
 
 #[derive(Default)]
 pub struct CancelHolder(pub OnceCell<CancellationToken>);
 
+
+// 既定スキーマはフロントエンド側で生成し、ここでは使用しない
 

@@ -29,6 +29,14 @@ export class CsvExporter {
 
     // 配列を展開して複数行に変換
     const expandArrays = (row: Record<string, any>): Record<string, any>[] => {
+      const removeArrayFields = (obj: Record<string, any>): Record<string, any> => {
+        const out: Record<string, any> = {};
+        for (const [k, v] of Object.entries(obj)) {
+          if (Array.isArray(v)) continue; // 生の配列カラムはCSVに出さない（要素は展開で出す）
+          out[k] = v;
+        }
+        return out;
+      };
       // まずネストされたオブジェクトをフラット化
       const flattenedRow = flattenObject(row);
       
@@ -46,7 +54,8 @@ export class CsvExporter {
 
       // 配列がない場合は元の行をそのまま返す
       if (arrayFields.length === 0) {
-        return [flattenedRow];
+        // 生配列カラムは除去して返す
+        return [removeArrayFields(flattenedRow)];
       }
 
       // 最大の配列の長さを取得
@@ -110,9 +119,16 @@ export class CsvExporter {
     });
 
     console.log('[CSV Export] Final expanded data count:', expandedData.length);
-    const successCsv = Papa.unparse(expandedData, {
-      header: true,
-      delimiter: ',',
+    // 全行のキーの和集合をフィールドとして固定（先頭行に依存しない）
+    const fieldSet = new Set<string>();
+    for (const row of expandedData) {
+      Object.keys(row).forEach((k) => fieldSet.add(k));
+    }
+    const fields = Array.from(fieldSet);
+
+    const successCsv = Papa.unparse({
+      fields,
+      data: expandedData,
     });
     console.log('[CSV Export] Step 3: CSV変換完了');
 

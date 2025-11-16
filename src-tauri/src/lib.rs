@@ -17,6 +17,7 @@ pub fn run() {
       crate::processor::process_rows,
       crate::processor::abort_processing,
       gemini_generate_with_search,
+      gemini_generate_prompt_text,
       recreate_windows_shortcut
     ])
     .setup(|app| {
@@ -31,11 +32,21 @@ mod gemini;
 mod processor;
 
 #[tauri::command]
-async fn gemini_generate_with_search(api_key: String, prompt: String, enable_web_search: Option<bool>) -> Result<crate::gemini::GenerateResponse, String> {
-  // デフォルト60秒（フロントで明示しないため）
-  // enable_web_searchが指定されていない場合はデフォルトでtrue（後方互換性のため）
+async fn gemini_generate_with_search(
+  api_key: String,
+  prompt: String,
+  enable_web_search: Option<bool>,
+  response_schema: Option<serde_json::Value>,
+) -> Result<crate::gemini::GenerateResponse, String> {
   let enable_web_search = enable_web_search.unwrap_or(true);
-  crate::gemini::generate_with_search_once(api_key, prompt, 60, enable_web_search)
+  crate::gemini::generate_events_with_search_once(api_key, prompt, 60, enable_web_search, response_schema)
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn gemini_generate_prompt_text(api_key: String, prompt: String) -> Result<crate::gemini::GenerateResponse, String> {
+  crate::gemini::generate_prompt_text_once(api_key, prompt, 60)
     .await
     .map_err(|e| e.to_string())
 }
